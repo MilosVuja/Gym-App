@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import TrainingPreview from "../../../training/TrainingPreview";
 
 export default function Training() {
@@ -29,9 +30,10 @@ export default function Training() {
     return (
       <div className="text-center mt-10">
         <h2 className="text-xl font-semibold mb-4">No active training plan</h2>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">
+        <Link to="/create-training-plan"
+           className="bg-blue-600 text-white px-4 py-2 rounded">
           Add Training Plan
-        </button>
+        </Link>
       </div>
     );
   }
