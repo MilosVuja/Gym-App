@@ -1,10 +1,13 @@
 @import "tailwindcss";
 
-.muscle.filled {
-  fill: red;
-}
-
-.muscle:hover {
+.muscles:hover,
+.bones:hover,
+.organs:hover,
+.cardio:hover {
   fill: red;
   cursor: pointer;
+}
+
+.filled{
+  fill: red;
 }
