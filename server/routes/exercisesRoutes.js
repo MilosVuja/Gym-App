@@ -5,13 +5,15 @@ const authController = require("../controllers/authController");
 const router = express.Router();
 
 //exercises
-router.get("/", authController.protect, exercisesController.getAllExercises);
-router.get("/filter", authController.protect, exercisesController.getFilteredExercises);
+router.get("/",  exercisesController.getAllExercises);
+router.get("/filter",  exercisesController.getFilteredExercises);
 
-router.get("/:id", authController.protect, exercisesController.getExercise);
+router.get("/:id",  exercisesController.getExercise);
 
 router
   .route("/add")
-  .post(authController.protect, exercisesController.addExercise);
+  .post( exercisesController.addExercise);
 
 module.exports = router;
+
+//ovo sam izbrisao sa svake rute authController.protect,

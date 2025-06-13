@@ -7,6 +7,7 @@ import Achievements from "../components/sidebar/tabs/shared/Achievements";
 import Goals from "../components/sidebar/tabs/shared/Goals";
 import Memberships from "../components/sidebar/tabs/shared/Memberships";
 import Nutrition from "../components/sidebar/tabs/shared/Nutrition";
+import Health from "../components/sidebar/tabs/shared/Health";
 import CreateTrainingPlan from "../pages/shared/MakeYourTraining";
 
 export default function AppRoutes() {
@@ -21,6 +22,7 @@ export default function AppRoutes() {
         <Route path="measurements" element={<Measurements />} />
         <Route path="training" element={<Training />} />
         <Route path="nutrition" element={<Nutrition />} />
+        <Route path="health" element={<Health />} />
         <Route path="goals" element={<Goals />} />
         <Route path="achievements" element={<Achievements />} />
       </Route>

@@ -1,21 +1,16 @@
 const Muscles = require("../models/musclesModel");
 const Exercises = require("../models/exercisesModel");
 const catchAsync = require("../utilities/catchAsync");
-
 const multer = require("multer");
 const upload = multer();
 
 exports.getAllExercises = catchAsync(async (req, res, next) => {
   const exercises = await Exercises.find();
-
-  res.status(200).json({
-    status: "Success",
+  return res.status(200).json({
+    status: "success",
     results: exercises.length,
-    data: {
-      exercises,
-    },
+    data: { exercises },
   });
-  next();
 });
 
 exports.getExercise = catchAsync(async (req, res, next) => {
@@ -28,13 +23,10 @@ exports.getExercise = catchAsync(async (req, res, next) => {
     });
   }
 
-  res.status(200).json({
+  return res.status(200).json({
     status: "success",
-    data: {
-      exercise,
-    },
+    data: { exercise },
   });
-  next();
 });
 
 exports.getFilteredExercises = catchAsync(async (req, res, next) => {
@@ -53,34 +45,41 @@ exports.getFilteredExercises = catchAsync(async (req, res, next) => {
     filter.$text = { $search: search };
   }
 
-  if (trainingType) {
-    filter.trainingType = trainingType;
-  }
-
-  if (category) {
-    filter.category = category;
-  }
+  if (trainingType) filter.trainingType = trainingType;
+  if (category) filter.category = category;
 
   if (muscles) {
-    const muscleNames = muscles.split(",");
-    const muscleIds = await Muscles.find({ name: { $in: muscleNames } }).select("_id");
-    filter.muscles = { $in: muscleIds.map((m) => m._id) };
+    const muscleNames = muscles.split(",").map((name) => name.trim());
+
+    const muscleDocs = await Muscles.find({
+      name: { $in: muscleNames.map((name) => new RegExp(`^${name}$`, "i")) },
+    }).select("_id");
+
+    if (muscleDocs.length === 0) {
+      return res.status(200).json({
+        status: "success",
+        results: 0,
+        data: [],
+        message: "No exercises found. No muscles matched.",
+      });
+    }
+
+    filter.muscles = { $in: muscleDocs.map((m) => m._id) };
   }
 
   if (equipment) {
-    const equipmentValues = equipment.split(",");
-    filter.equipment = { $in: equipmentValues.map(e => new RegExp(`^${e}$`, "i")) };
+    const values = equipment.split(",").map((e) => e.trim());
+    filter.equipment = { $in: values.map((v) => new RegExp(`^${v}$`, "i")) };
   }
-
 
   if (movement) {
-    const movementValues = movement.split(",");
-    filter.movement = { $in: movementValues.map(e => new RegExp(`^${e}$`, "i")) };
+    const values = movement.split(",").map((m) => m.trim());
+    filter.movement = { $in: values.map((v) => new RegExp(`^${v}$`, "i")) };
   }
 
-  const exercises = await Exercises.find(filter);
+  const exercises = await Exercises.find(filter).populate("muscles");
 
-  res.status(200).json({
+  return res.status(200).json({
     status: "success",
     results: exercises.length,
     data: exercises,
@@ -89,8 +88,7 @@ exports.getFilteredExercises = catchAsync(async (req, res, next) => {
 
 exports.addExercise = [
   upload.none(),
-  catchAsync(async (req, res) => {
-
+  catchAsync(async (req, res, next) => {
     const {
       name,
       thumbnail,
@@ -106,17 +104,18 @@ exports.addExercise = [
       tags,
     } = req.body;
 
-    let musclesArray, equipmentArray, tagsArray;
+    let musclesArray = [];
+    let equipmentArray = [];
+    let tagsArray = [];
 
     try {
       musclesArray = JSON.parse(muscles);
       equipmentArray = equipment ? JSON.parse(equipment) : [];
       tagsArray = tags ? JSON.parse(tags) : [];
     } catch (err) {
-      console.error("Error parsing JSON arrays:", err);
       return res.status(400).json({
         message:
-          "Invalid format for muscles, equipment, or tags. They should be valid JSON arrays.",
+          "Invalid format for muscles, equipment, or tags. Must be JSON arrays.",
       });
     }
 
@@ -126,8 +125,8 @@ exports.addExercise = [
       });
     }
 
-    const existingExercise = await Exercises.findOne({ name });
-    if (existingExercise) {
+    const existing = await Exercises.findOne({ name });
+    if (existing) {
       return res.status(400).json({
         message: "An exercise with this name already exists.",
       });
@@ -148,19 +147,11 @@ exports.addExercise = [
       tags: tagsArray,
     });
 
-    try {
-      await newExercise.save();
-      res.status(201).json({
-        status: "success",
-        data: { newExercise },
-      });
-    } catch (err) {
-      console.error("MongoDB Save Error:", err);
-      res.status(500).json({
-        status: "error",
-        message: "Failed to save exercise",
-        error: err.message,
-      });
-    }
+    await newExercise.save();
+
+    return res.status(201).json({
+      status: "success",
+      data: { newExercise },
+    });
   }),
 ];

@@ -17,6 +17,7 @@ const menuItems = [
   { label: "Memberships", icon: <FaIdCard />, section: "memberships" },
   { label: "Training", icon: <FaDumbbell />, section: "training" },
   { label: "Nutrition", icon: <FaAppleAlt />, section: "nutrition" },
+  { label: "Health", icon: <FaAppleAlt />, section: "health" },
   { label: "Goals", icon: <FaBullseye />, section: "goals" },
   { label: "Achievements", icon: <FaTrophy />, section: "achievements" },
 ];
