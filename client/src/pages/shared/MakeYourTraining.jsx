@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import SvgTooltip from "../../components/SVGTooltip";
 import ExerciseCardTraining from "../../components/training/MakeYourTraining/ExerciseCardTraining";
+import ExerciseModal from "../../components/ExerciseModal";
+import CheckboxDropdown from "../../components/training/MakeYourTraining/CheckboxDropdown";
 
 export default function CreateTrainingPlan() {
   const [duration, setDuration] = useState("");
@@ -16,6 +18,8 @@ export default function CreateTrainingPlan() {
   const [showContainers, setShowContainers] = useState(false);
   const [chosenExercises, setChosenExercises] = useState([]);
   const [draggedId, setDraggedId] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState(null);
 
   const [filters, setFilters] = useState({
     equipment: [],
@@ -147,21 +151,18 @@ export default function CreateTrainingPlan() {
     });
   };
 
-  const handleFilterChange = (key, value, isCheckbox = false) => {
-    setFilters((prev) => {
-      if (isCheckbox) {
-        const list = prev[key];
-        return {
-          ...prev,
-          [key]: list.includes(value)
-            ? list.filter((v) => v !== value)
-            : [...list, value],
-        };
-      } else {
-        return { ...prev, [key]: value };
-      }
-    });
-  };
+const handleFilterChange = (key, value, isCheckbox = false) => {
+  setFilters((prev) => {
+    if (isCheckbox) {
+      return {
+        ...prev,
+        [key]: value,
+      };
+    } else {
+      return { ...prev, [key]: value };
+    }
+  });
+};
 
   const fetchExercises = () => {
     const muscleNames = selectedMuscles.map((m) => m.name);
@@ -904,15 +905,13 @@ export default function CreateTrainingPlan() {
 
       {showContainers && (
         <>
-          <div
-            id="exercise-filters"
-            style={{ display: "flex", gap: "10px", marginTop: "16px" }}
-          >
+          <div id="exercise-filters" className="flex flex-wrap gap-4 mt-4">
             <input
               type="text"
               placeholder="Search exercise..."
               value={filters.search}
               onChange={(e) => handleFilterChange("search", e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md w-48"
             />
 
             <CheckboxDropdown
@@ -934,6 +933,7 @@ export default function CreateTrainingPlan() {
               onChange={(e) =>
                 handleFilterChange("trainingType", e.target.value)
               }
+              className="px-3 py-2 border border-gray-300 rounded-md w-48"
             >
               <option value="">Training Type</option>
               <option value="Strength">Strength</option>
@@ -943,6 +943,7 @@ export default function CreateTrainingPlan() {
             <select
               value={filters.category}
               onChange={(e) => handleFilterChange("category", e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-md w-48"
             >
               <option value="">Category</option>
               <option value="Bodybuilding">Bodybuilding</option>
@@ -1006,6 +1007,10 @@ export default function CreateTrainingPlan() {
                     showPosition
                     showRemoveButton
                     onRemove={handleRemove}
+                    onClick={() => {
+                      setSelectedExercise(exercise);
+                      setModalOpen(true);
+                    }}
                   />
                 </div>
               ))
@@ -1013,41 +1018,26 @@ export default function CreateTrainingPlan() {
           </div>
         </>
       )}
-    </div>
-  );
-}
 
-function CheckboxDropdown({ title, options, selected, onChange }) {
-  return (
-    <div style={{ position: "relative" }}>
-      <details>
-        <summary style={{ cursor: "pointer" }}>{title}</summary>
-        <div
-          style={{
-            position: "absolute",
-            border: "1px solid #ccc",
-            padding: "10px",
-            zIndex: 10,
-            maxHeight: "200px",
-            overflowY: "auto",
+      {modalOpen && selectedExercise && (
+        <ExerciseModal
+          show={modalOpen}
+          onClose={() => setModalOpen(false)}
+          exerciseName={selectedExercise.name}
+          videoSrc={selectedExercise.videoUrl}
+          initialInstructions={selectedExercise.instructions || ""}
+          onSave={({ rows, instructions }) => {
+            setChosenExercises((prev) =>
+              prev.map((ex) =>
+                ex._id === selectedExercise._id
+                  ? { ...ex, rows, instructions }
+                  : ex
+              )
+            );
+            setModalOpen(false);
           }}
-        >
-          {options.map((option) => (
-            <label
-              key={option}
-              style={{ display: "block", marginBottom: "4px" }}
-            >
-              <input
-                type="checkbox"
-                value={option.toLowerCase()}
-                checked={selected.includes(option.toLowerCase())}
-                onChange={() => onChange(option.toLowerCase())}
-              />
-              {option}
-            </label>
-          ))}
-        </div>
-      </details>
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { FaTrash, FaRegCopy } from "react-icons/fa";
 
 export default function ExerciseModal({
   exerciseName = "Name of the exercise",
@@ -40,11 +41,13 @@ export default function ExerciseModal({
   };
 
   const copyRow = (rowId) => {
-    setRows((prev) => {
-      const rowToCopy = prev.find((r) => r.id === rowId);
-      if (!rowToCopy) return prev;
-      return [...prev, { ...rowToCopy, id: Date.now() }];
-    });
+    const index = rows.findIndex((row) => row.id === rowId);
+    if (index === -1) return;
+
+    const copiedRow = { ...rows[index], id: crypto.randomUUID() };
+    const updatedRows = [...rows];
+    updatedRows.splice(index + 1, 0, copiedRow);
+    setRows(updatedRows);
   };
 
   const deleteRow = (rowId) => {
@@ -102,7 +105,6 @@ export default function ExerciseModal({
 
         <div className="wrapper_adjust">
           <div className="rows-container flex flex-col">
-
             <div className="exercise-row flex flex-col border border-red-900 p-4 first:rounded-t-md">
               <div className="header-row grid grid-cols-5 place-items-center">
                 <span className="font-bold">SETS</span>
@@ -126,13 +128,18 @@ export default function ExerciseModal({
               >
                 <div className="input-row grid grid-cols-5 place-items-center">
                   {["sets", "reps", "weight", "rest"].map((field) => (
-                    <div key={field} className="exercise-field flex flex-col items-center justify-center">
+                    <div
+                      key={field}
+                      className="exercise-field flex flex-col items-center justify-center"
+                    >
                       <div className="counter flex pl-12 items-center justify-center relative">
                         <input
                           type="number"
-                          className="w-16 text-center bg-transparent border-none text-base font-bold m-0 outline-none"
+                          className="no-spinner w-16 text-center bg-transparent border-none text-base font-bold m-0 outline-none"
                           min={0}
-                          step={field === "weight" ? 2.5 : field === "rest" ? 60 : 1}
+                          step={
+                            field === "weight" ? 2.5 : field === "rest" ? 60 : 1
+                          }
                           value={row[field]}
                           onChange={(e) => handleInputChange(row.id, field, e)}
                         />
@@ -143,7 +150,11 @@ export default function ExerciseModal({
                             updateField(
                               row.id,
                               field,
-                              field === "weight" ? 2.5 : field === "rest" ? 60 : 1,
+                              field === "weight"
+                                ? 2.5
+                                : field === "rest"
+                                ? 60
+                                : 1,
                               true
                             )
                           }
@@ -157,7 +168,11 @@ export default function ExerciseModal({
                             updateField(
                               row.id,
                               field,
-                              field === "weight" ? -2.5 : field === "rest" ? -60 : -1,
+                              field === "weight"
+                                ? -2.5
+                                : field === "rest"
+                                ? -60
+                                : -1,
                               true
                             )
                           }
@@ -170,24 +185,20 @@ export default function ExerciseModal({
 
                   <div className="exercise-field flex flex-col items-center justify-center">
                     <div className="row-actions flex flex-row gap-4 justify-center">
-                      <span
+                      <button
                         onClick={() => copyRow(row.id)}
-                        className="cursor-pointer"
-                        role="button"
-                        tabIndex={0}
+                        className="text-red-900 hover:text-red-600 text-lg cursor-pointer"
                         aria-label="Copy row"
                       >
-                        <i className="fa-regular fa-copy text-red-900 text-lg hover:text-red-600"></i>
-                      </span>
-                      <span
+                        <FaRegCopy />
+                      </button>
+                      <button
                         onClick={() => deleteRow(row.id)}
-                        className="cursor-pointer"
-                        role="button"
-                        tabIndex={0}
+                        className="text-red-900 hover:text-red-600 text-lg cursor-pointer"
                         aria-label="Delete row"
                       >
-                        <i className="fa-solid fa-trash text-red-900 text-lg hover:text-red-600"></i>
-                      </span>
+                        <FaTrash />
+                      </button>
                     </div>
                   </div>
                 </div>
