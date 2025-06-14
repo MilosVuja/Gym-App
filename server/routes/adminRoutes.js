@@ -1,14 +1,16 @@
 const express = require("express");
-const memberController = require("../controllers/memberController");
+const adminController = require("../controllers/adminController");
 const authController = require("../controllers/authController");
 
 const router = express.Router();
 
-router.use(authController.protect, authController.restrictTo("admin"));
-router.get("/members/:id/training", memberController.getAdminMemberTraining);
-router.patch(
-  "/members/:id/assign-training-plan",
-  memberController.assignTrainingPlan
-);
+router.use(authController.protect);
+router.use(authController.restrictTo("admin"));
+
+//api/v1/admin/
+router.patch("/approve/:memberId", adminController.approveMember);
+router.get("/pending-members", adminController.getPendingMembers);
+router.patch("/change-role/:memberId", adminController.changeMemberRole);
+// router.delete("/delete/:memberId", adminController.deleteMember);
 
 module.exports = router;

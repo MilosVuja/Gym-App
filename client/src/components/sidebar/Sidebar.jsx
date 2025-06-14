@@ -29,12 +29,12 @@ export default function Sidebar() {
     <div
       className={`${
         collapsed ? "w-[70px]" : "w-[250px]"
-      } h-screen bg-red-900 text-black font-bold flex flex-col transition-all duration-300`}
+      } min-h-screen bg-red-900 text-black font-bold flex flex-col transition-all duration-300 sticky top-0`}
     >
-      <div className="flex justify-end p-2">
+      <div className={`p-3 ${collapsed ? "px-4" : "flex justify-end"}`}>
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="text-white text-lg"
+          className="cursor-pointer text-white text-lg flex items-center justify-center"
         >
           <FaBars />
         </button>
@@ -55,12 +55,16 @@ export default function Sidebar() {
               to={`/members/profile/${item.section}`}
               className={({ isActive }) =>
                 `flex items-center px-4 py-3 transition-colors duration-300 ${
-                  isActive ? "bg-black text-white" : "hover:bg-black hover:text-white"
+                  isActive
+                    ? "bg-black text-white"
+                    : "hover:bg-black hover:text-white"
                 }`
               }
             >
               <span className="text-xl">{item.icon}</span>
-              {!collapsed && <span className="ml-3 uppercase">{item.label}</span>}
+              {!collapsed && (
+                <span className="ml-3 uppercase">{item.label}</span>
+              )}
             </NavLink>
           </li>
         ))}

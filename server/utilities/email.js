@@ -7,17 +7,16 @@ const sendEmail = async options => {
       user: process.env.EMAIL_USERNAME,
       pass: process.env.EMAIL_PASSWORD
     },
-  })
+  });
 
   const mailOptions = {
     from: 'Milos Vujicic <milos.vujicic.dev@gmail.com>',
-    to: options.email,
+    to: options.to,
     subject: options.subject,
-    text: options.message,
-    // html: 
-  }
+    html: options.html || options.message,
+  };
 
   await transporter.sendMail(mailOptions);
-}
+};
 
 module.exports = sendEmail;

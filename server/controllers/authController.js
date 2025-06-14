@@ -4,10 +4,11 @@ const { promisify } = require("util");
 const Member = require("./../models/membersModel");
 const catchAsync = require("./../utilities/catchAsync");
 const AppError = require("./../utilities/appError");
+const sendEmail = require("./../utilities/email");
 
 const signToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
+    expiresIn: process.env.JWT_EXPIRES_IN || "30d",
   });
 };
 
@@ -16,22 +17,31 @@ const createSendToken = (member, statusCode, res) => {
 
   const cookieOptions = {
     expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
+      Date.now() +
+        (process.env.JWT_COOKIE_EXPIRES_IN || 90) * 24 * 60 * 60 * 1000
     ),
-    secure: false,
+    secure: process.env.NODE_ENV === "production",
     httpOnly: true,
   };
   if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
 
   res.cookie("jwt", token, cookieOptions);
 
-  member.pinCode = undefined;
+  const safeMember = {
+    _id: member._id,
+    firstName: member.firstName,
+    lastName: member.lastName,
+    email: member.email,
+    role: member.role,
+    gymId: member.gymId,
+    status: member.status,
+  };
 
   res.status(statusCode).json({
     status: "Success!",
     token,
     data: {
-      member,
+      member: safeMember,
     },
   });
 };
@@ -41,41 +51,54 @@ exports.signup = catchAsync(async (req, res, next) => {
     firstName: req.body.firstName,
     lastName: req.body.lastName,
     email: req.body.email,
-    role: req.body.role,
-    phoneNumber: req.body.phoneNumber,
+    password: req.body.password,
+  });
+
+  await sendEmail({
+    to: newMember.email,
+    subject: "Welcome to Our Gym!",
+    html: `<p>Hi ${newMember.firstName},</p>
+           <p>Thank you for registering at our gym. Your account is currently pending approval.</p>
+           <p>You’ll receive a confirmation email once approved.</p>
+           <p>Best regards,</p>
+           <p>Your Gym Team</p>`,
+  });
+
+  await sendEmail({
+    to: process.env.ADMIN_EMAIL,
+    subject: "New Member Registration",
+    html: `<p>New member registered:</p>
+           <ul>
+             <li><strong>Name:</strong> ${newMember.firstName} ${newMember.lastName}</li>
+             <li><strong>Email:</strong> ${newMember.email}</li>
+             <li><strong>Phone:</strong> ${newMember.phoneNumber}</li>
+           </ul>
+           <p><a href="${process.env.APP_URL}/admin/approve/${newMember._id}">Approve this member</a></p>`,
   });
 
   createSendToken(newMember, 201, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
-  const { email, pinCode } = req.body;
+  const { email, password } = req.body;
 
-  if (!email || !pinCode) {
-    return next(new AppError("Please provide email and pin code!", 400));
+  if (!email || !password) {
+    return next(new AppError("Please provide email and password!", 400));
   }
 
-  const member = await Member.findOne({ email }).select("+pinCode");
+  const member = await Member.findOne({ email }).select("+password");
 
-  if (!member || !(await member.correctPinCode(pinCode, member.pinCode))) {
-    return next(new AppError("Incorrect email or pin code!", 401));
+  if (!member || !(await member.correctPassword(password))) {
+    return next(new AppError("Incorrect email or password!", 401));
   }
 
-  const token = jwt.sign({ id: member._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
-  });
+  if (member.status !== "active") {
+    return next(
+      new AppError("Your account is not active. Awaiting approval.", 403)
+    );
+  }
 
-  const cookieOptions = {
-    expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
-    ),
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-  };
-
-  res.cookie("jwt", token, cookieOptions);
-
-  member.pinCode = undefined;
+  createSendToken(member, 200, res);
 
   res.status(200).json({
     status: "Success!",

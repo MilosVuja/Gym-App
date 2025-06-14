@@ -1,6 +1,4 @@
 const express = require("express");
-const fs = require("fs");
-const path = require("path");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
@@ -9,22 +7,18 @@ const hpp = require("hpp");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
-const memberRouter = require("./routes/memberRoutes");
-const groupClassRouter = require("./routes/groupClassRoutes");
 const AppError = require("./utilities/appError");
 const globalErrorHandler = require("./controllers/errorController");
-const viewRouter = require("./routes/viewRoutes");
-const adminRoutes = require("./routes/adminRoutes");
-const trainingPlanRoutes = require("./routes/trainingPlanRoutes");
+
+const authRouter = require("./routes/authRoutes");
+const memberRouter = require("./routes/memberRoutes");
+const adminRouter = require("./routes/adminRoutes");
+const groupClassRouter = require("./routes/groupClassRoutes");
+const trainingPlanRouter = require("./routes/trainingPlanRoutes");
 const musclesRouter = require("./routes/musclesRouter");
 const exercisesRouter = require("./routes/exercisesRoutes");
 
 const app = express();
-
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
-
-app.use(express.static(path.join(__dirname, "public")));
 
 app.use(helmet({ contentSecurityPolicy: false }));
 
@@ -52,17 +46,17 @@ app.use(
 
 app.use(cors());
 
-app.use("/", viewRouter);
+app.use('/api/v1/auth', authRouter);
 app.use("/api/v1/members", memberRouter);
-app.use("/api/v1/admin", adminRoutes);
-app.use("/api/v1/groupClassBooking", groupClassRouter);
-app.use("/api/v1/training-plans", trainingPlanRoutes);
+app.use("/api/v1/admin", adminRouter);
+app.use("/api/v1/group-class", groupClassRouter);
+app.use("/api/v1/training-plans", trainingPlanRouter);
 app.use("/api/v1/muscles", musclesRouter);
 app.use("/api/v1/exercises", exercisesRouter);
 
-// app.all("*", (req, res, next) => {
-//   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
-// });
+app.all("*", (req, res, next) => {
+  next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
+});
 
 app.use(globalErrorHandler);
 
