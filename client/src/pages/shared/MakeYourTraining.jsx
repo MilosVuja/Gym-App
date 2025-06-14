@@ -250,6 +250,7 @@ const handleFilterChange = (key, value, isCheckbox = false) => {
 
   return (
     <div id="wrapper" className="w-full bg-black text-white font-sans p-8">
+      <h2 className="text-4xl text-red-600 font-bold font-handwriting mb-8 text-center">Training Maker</h2>
       <div className="flex justify-evenly mb-10">
         <div id="basic-info">
           <div className="mb-4 flex flex-col" id="plan-name">
@@ -284,6 +285,7 @@ const handleFilterChange = (key, value, isCheckbox = false) => {
               min="2"
               max="7"
               onChange={(e) => setTimesPerWeek(e.target.value)}
+              className="no-spinner "
             />
           </div>
           <div className="mb-4 flex flex-col" id="plan-start-date">

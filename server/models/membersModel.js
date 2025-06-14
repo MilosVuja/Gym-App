@@ -1,10 +1,12 @@
 const mongoose = require("mongoose");
+const bcrypt = require('bcryptjs');
 
 const MemberSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, index: true },
+    isEmailVerified: { type: Boolean, default: false },
     password: { type: String, required: true },
     profilePicture: { type: String, default: "" },
     phoneNumber: { type: String },
@@ -17,15 +19,22 @@ const MemberSchema = new mongoose.Schema(
       zipCode: String,
       country: String,
     },
+    gymId: { type: String, unique: true },
     measurements: [
       { type: mongoose.Schema.Types.ObjectId, ref: "Measurement" },
     ],
     memberships: [{ type: mongoose.Schema.Types.ObjectId, ref: "Membership" }],
 
-    trainingPlans: [{type: mongoose.Schema.Types.ObjectId, ref: "TrainingPlan"}],
-    completedSessions: [{ type: mongoose.Schema.Types.ObjectId, ref: "CompletedSession" }],
+    trainingPlans: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "TrainingPlan" },
+    ],
+    completedSessions: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "CompletedSession" },
+    ],
 
-    healthIssues: [{ type: mongoose.Schema.Types.ObjectId, ref: "HealthIssue" }],
+    healthIssues: [
+      { type: mongoose.Schema.Types.ObjectId, ref: "HealthIssue" },
+    ],
 
     goals: [{ type: mongoose.Schema.Types.ObjectId, ref: "Goal" }],
 
@@ -69,7 +78,7 @@ const MemberSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["active", "inactive", "banned", "pending"],
-      default: "active",
+      default: "pending",
     },
 
     trainer: {
@@ -92,6 +101,16 @@ const MemberSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+MemberSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
+
+MemberSchema.methods.correctPassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
 module.exports = mongoose.model("Member", MemberSchema);
 
