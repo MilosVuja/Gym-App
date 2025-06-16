@@ -44,9 +44,14 @@ app.use(
   })
 );
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-app.use('/api/v1/auth', authRouter);
+app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/members", memberRouter);
 app.use("/api/v1/admin", adminRouter);
 app.use("/api/v1/group-class", groupClassRouter);

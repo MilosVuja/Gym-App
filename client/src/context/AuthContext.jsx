@@ -8,37 +8,20 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    console.log("Token from localStorage:", token);
-
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    console.log("Set axios default Authorization header");
-
-    axios
-      .get("/api/v1/members/me")
-      .then((res) => {
-        const memberData = res?.data?.data?.member;
-        if (memberData) {
-          setMember(memberData);
-        } else {
-          console.error("No member data in response:", res.data);
-          setMember(null);
-          localStorage.removeItem("token");
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to fetch member:", err);
+    const fetchUser = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/api/v1/auth/me", {
+          withCredentials: true,
+        });
+        setMember(res.data.data.member);
+      } catch (err) {
+        console.error("Error fetching user:", err);
         setMember(null);
-        localStorage.removeItem("token");
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    fetchUser();
   }, []);
 
   return (

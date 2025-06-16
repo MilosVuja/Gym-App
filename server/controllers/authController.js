@@ -14,35 +14,24 @@ const signToken = (id) => {
 };
 
 const createSendToken = (member, statusCode, res) => {
-  const token = signToken(member._id);
+  const token = jwt.sign({ id: member._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+  });
 
-  const cookieOptions = {
-    expires: new Date(
-      Date.now() +
-        (process.env.JWT_COOKIE_EXPIRES_IN || 90) * 24 * 60 * 60 * 1000
-    ),
-    secure: process.env.NODE_ENV === "production",
+  res.cookie("jwt", token, {
     httpOnly: true,
-  };
-  if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "Lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
 
-  res.cookie("jwt", token, cookieOptions);
-
-  const safeMember = {
-    _id: member._id,
-    firstName: member.firstName,
-    lastName: member.lastName,
-    email: member.email,
-    role: member.role,
-    gymId: member.gymId,
-    status: member.status,
-  };
+  member.password = undefined;
 
   res.status(statusCode).json({
-    status: "Success!",
+    status: "success",
     token,
     data: {
-      member: safeMember,
+      member,
     },
   });
 };
@@ -198,7 +187,7 @@ exports.getMe = (req, res) => {
   res.status(200).json({
     status: "success",
     data: {
-      user: safeMember,
+      member: safeMember,
     },
   });
 };
