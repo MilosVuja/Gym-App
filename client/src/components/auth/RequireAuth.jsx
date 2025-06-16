@@ -1,20 +1,12 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
-export default function RequireAuth({ allowedRoles }) {
-  const { user, loading } = useAuth();
+export default function RequireAuth({ allowedRoles, children }) {
+  const { member, loading } = useAuth();
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  if (loading) return <div>Loading...</div>;
+  if (!member) return <Navigate to="/login" replace />;
+  if (allowedRoles && !allowedRoles.includes(member.role)) return <Navigate to="/no-access" replace />;
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!allowedRoles.includes(user.role)) {
-    return <Navigate to="/no-access" replace />;
-  }
-
-  return <Outlet />;
+  return children ? children : <Outlet />;
 }

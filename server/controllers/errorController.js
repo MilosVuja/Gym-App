@@ -6,15 +6,13 @@ const handleCastErrorDB = err => {
 };
 
 const handleDuplicateFieldsDB = err => {
-  const value = err.errmsg.match(/(["'])(\\?.)*?\1/)[0];
-
+  const value = err.keyValue ? JSON.stringify(err.keyValue) : 'Unknown';
   const message = `Duplicate field value: ${value}. Please use another value!`;
   return new AppError(message, 400);
 };
 
 const handleValidationErrorDB = err => {
   const errors = Object.values(err.errors).map(el => el.message);
-
   const message = `Invalid input data. ${errors.join('. ')}`;
   return new AppError(message, 400);
 };
@@ -26,47 +24,25 @@ const handleJWTExpiredError = () =>
   new AppError('Your token has expired! Please log in again.', 401);
 
 const sendErrorDev = (err, req, res) => {
-  if (req.originalUrl.startsWith('/api')) {
-    return res.status(err.statusCode).json({
-      status: err.status,
-      error: err,
-      message: err.message,
-      stack: err.stack
-    });
-  }
-  console.error('ERROR!!!', err);
-  return res.status(err.statusCode).render('error', {
-    title: 'Something went wrong!',
-    msg: err.message
+  return res.status(err.statusCode).json({
+    status: err.status,
+    error: err,
+    message: err.message,
+    stack: err.stack,
   });
 };
 
 const sendErrorProd = (err, req, res) => {
-  if (req.originalUrl.startsWith('/api')) {
-    if (err.isOperational) {
-      return res.status(err.statusCode).json({
-        status: err.status,
-        message: err.message
-      });
-    }
-    console.error('ERROR!!!', err);
-
-    return res.status(500).json({
-      status: 'error',
-      message: 'Something went very wrong!'
-    });
-  }
   if (err.isOperational) {
-    console.log(err);
-    return res.status(err.statusCode).render('error', {
-      title: 'Something went wrong!',
-      msg: err.message
+    return res.status(err.statusCode).json({
+      status: err.status,
+      message: err.message,
     });
   }
-  console.error('ERROR!!!', err);
-  return res.status(err.statusCode).render('error', {
-    title: 'Something went wrong!',
-    msg: 'Please try again later.'
+  console.error('ERROR 💥', err);
+  return res.status(500).json({
+    status: 'error',
+    message: 'Something went very wrong!',
   });
 };
 

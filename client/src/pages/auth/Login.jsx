@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 import axios from "axios";
 
 export default function Login() {
@@ -6,25 +8,35 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const { setMember } = useAuth();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError("");
+  setLoading(true);
 
-    try {
-      const response = await axios.post("http://localhost:3000/api/v1/auth/login", { email, password });
-      localStorage.setItem("token", response.data.token);
-      window.location.href = "/members/profile/personal";
-    } catch (err) {
-      setError(
-        err.response?.data?.message ||
-        "Login failed. Please check your credentials and try again."
-      );
-    } finally {
-      setLoading(false);
+  try {
+    const response = await axios.post(
+      "http://localhost:3000/api/v1/auth/login",
+      { email, password }
+    );
+    localStorage.setItem("token", response.data.token);
+
+    if (response.data.data?.member) {
+      setMember(response.data.data.member);
     }
-  };
+
+    navigate("/members/profile/personal");
+  } catch (err) {
+    setError(
+      err.response?.data?.message ||
+        "Login failed. Please check your credentials and try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen w-screen bg-black flex flex-col items-center justify-center px-4 text-white">
@@ -41,9 +53,7 @@ export default function Login() {
           Log into your account
         </h3>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-700 rounded">{error}</div>
-        )}
+        {error && <div className="mb-4 p-3 bg-red-700 rounded">{error}</div>}
 
         <form onSubmit={handleSubmit} className="w-full">
           <div className="mb-6">

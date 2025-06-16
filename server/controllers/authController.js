@@ -1,3 +1,4 @@
+require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const { promisify } = require("util");
 
@@ -73,41 +74,36 @@ exports.signup = catchAsync(async (req, res, next) => {
              <li><strong>Email:</strong> ${newMember.email}</li>
              <li><strong>Phone:</strong> ${newMember.phoneNumber}</li>
            </ul>
-           <p><a href="${process.env.APP_URL}/admin/approve/${newMember._id}">Approve this member</a></p>`,
+           <p><a href="http://localhost:3000/api/v1/admin/approve/${newMember._id}">Approve this member</a></p>`,
   });
 
   createSendToken(newMember, 201, res);
 });
 
-exports.login = catchAsync(async (req, res, next) => {
-  const { email, password } = req.body;
+exports.login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return next(new AppError("Please provide email and password!", 400));
+    }
 
-  if (!email || !password) {
-    return next(new AppError("Please provide email and password!", 400));
+    const member = await Member.findOne({ email }).select("+password");
+
+    if (!member || !(await member.correctPassword(password))) {
+      return next(new AppError("Incorrect email or password!", 401));
+    }
+
+    if (member.status !== "active") {
+      return next(
+        new AppError("Your account is not active. Awaiting approval.", 403)
+      );
+    }
+    return createSendToken(member, 200, res);
+
+  } catch (err) {
+    next(err);
   }
-
-  const member = await Member.findOne({ email }).select("+password");
-
-  if (!member || !(await member.correctPassword(password))) {
-    return next(new AppError("Incorrect email or password!", 401));
-  }
-
-  if (member.status !== "active") {
-    return next(
-      new AppError("Your account is not active. Awaiting approval.", 403)
-    );
-  }
-
-  createSendToken(member, 200, res);
-
-  res.status(200).json({
-    status: "Success!",
-    token,
-    data: {
-      member,
-    },
-  });
-});
+};
 
 exports.logout = catchAsync(async (req, res, next) => {
   res.cookie("jwt", "loggedout", {
@@ -186,4 +182,23 @@ exports.restrictTo = (...roles) => {
     }
     next();
   };
+};
+
+exports.getMe = (req, res) => {
+  const safeMember = {
+    _id: req.member._id,
+    firstName: req.member.firstName,
+    lastName: req.member.lastName,
+    email: req.member.email,
+    role: req.member.role,
+    gymId: req.member.gymId,
+    status: req.member.status,
+  };
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      user: safeMember,
+    },
+  });
 };
