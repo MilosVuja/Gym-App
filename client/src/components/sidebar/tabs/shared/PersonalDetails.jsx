@@ -12,14 +12,14 @@ const PersonalDetails = () => {
             alt="Profile"
             className="w-48 h-48 rounded-full object-cover border-4 border-red-900"
           />
-          <button className="absolute bottom-3 right-3 bg-gray-700 text-white rounded-full p-2">
+          <button className="absolute bottom-3 right-3 bg-gray-700 text-white rounded-full p-2 cursor-pointer">
             <span role="img" aria-label="camera">
               📷
             </span>
           </button>
         </div>
 
-        <div className="border border-red-700 p-6 rounded-md w-full md:w-[700px]">
+        <div className="border border-red-700 p-6 rounded-md w-full md:w-[700px] bg-black">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label>First name:</label>
@@ -74,10 +74,10 @@ const PersonalDetails = () => {
           </div>
 
           <div className="flex justify-end gap-4">
-            <button className="border border-white rounded-full px-6 py-2 hover:bg-white hover:text-black transition">
+            <button className="border border-white rounded-full px-6 py-2 hover:bg-white hover:text-black transition cursor-pointer">
               Delete
             </button>
-            <button className="bg-red-900 text-white rounded-full px-6 py-2 hover:bg-red-700 transition">
+            <button className="bg-red-900 text-white rounded-full px-6 py-2 hover:bg-red-700 transition cursor-pointer">
               Save
             </button>
           </div>

@@ -1,5 +1,5 @@
 const Member = require("../models/membersModel");
-const { sendEmail } = require("../utilities/email");
+const sendEmail = require("../utilities/email");
 const catchAsync = require("../utilities/catchAsync");
 const AppError = require("../utilities/appError");
 
@@ -15,7 +15,10 @@ exports.approveMember = catchAsync(async (req, res, next) => {
 
   member.status = "active";
 
-  if (req.query.role && ["member", "trainer", "staff"].includes(req.query.role)) {
+  if (
+    req.query.role &&
+    ["member", "trainer", "staff"].includes(req.query.role)
+  ) {
     member.role = req.query.role;
   }
 
@@ -29,7 +32,66 @@ exports.approveMember = catchAsync(async (req, res, next) => {
            <p>See you at the gym!</p>`,
   });
 
-  res.status(200).send("Member approved and notified via email.");
+  const html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Member Approved</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f5f5f5;
+          margin: 0;
+          padding: 2rem;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+        }
+        .container {
+          background-color: white;
+          padding: 2rem 3rem;
+          border-radius: 8px;
+          box-shadow: 0 0 10px rgba(0,0,0,0.1);
+          max-width: 400px;
+          text-align: center;
+        }
+        h1 {
+          color: #27ae60;
+          margin-bottom: 1rem;
+        }
+        p {
+          font-size: 1.1rem;
+          color: #333;
+          margin-bottom: 1.5rem;
+        }
+        a {
+          display: inline-block;
+          padding: 0.5rem 1rem;
+          background-color: #e74c3c;
+          color: white;
+          border-radius: 4px;
+          text-decoration: none;
+          font-weight: bold;
+        }
+        a:hover {
+          background-color: #c0392b;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Member Approved!</h1>
+        <p>Member <strong>${member.firstName} ${member.lastName}</strong> has been successfully approved.</p>
+        <a href="${process.env.APP_URL}/admin/dashboard">Back to Admin Dashboard</a>
+      </div>
+    </body>
+    </html>
+  `;
+
+  res.status(200).send(html);
 });
 
 exports.getPendingMembers = catchAsync(async (req, res) => {
@@ -74,4 +136,3 @@ exports.changeMemberRole = catchAsync(async (req, res, next) => {
     },
   });
 });
-

@@ -31,11 +31,9 @@ export default function Register() {
       });
 
       window.location.href = "/login";
-
     } catch (err) {
       setError(
-        err.response?.data?.message ||
-          "Registration failed. Please try again."
+        err.response?.data?.message || "Registration failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -57,42 +55,42 @@ export default function Register() {
           Create a new account
         </h3>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-700 rounded">{error}</div>
-        )}
+        {error && <div className="mb-4 p-3 bg-red-700 rounded">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="w-full">
-          <div className="mb-6">
-            <label htmlFor="firstName" className="block mb-1 font-bold">
-              First Name
-            </label>
-            <input
-              type="text"
-              id="firstName"
-              required
-              className="w-full bg-transparent border border-red-700 rounded py-3 px-2"
-              placeholder="Your first name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-            />
+        <form onSubmit={handleSubmit} className="w-full space-y-4">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label htmlFor="firstName" className="block mb-1 font-bold">
+                First Name
+              </label>
+              <input
+                type="text"
+                id="firstName"
+                required
+                className="w-full bg-transparent border border-red-700 rounded py-3 px-2"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="First name"
+              />
+            </div>
+
+            <div className="flex-1">
+              <label htmlFor="lastName" className="block mb-1 font-bold">
+                Last Name
+              </label>
+              <input
+                type="text"
+                id="lastName"
+                required
+                className="w-full bg-transparent border border-red-700 rounded py-3 px-2"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Last name"
+              />
+            </div>
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="lastName" className="block mb-1 font-bold">
-              Last Name
-            </label>
-            <input
-              type="text"
-              id="lastName"
-              required
-              className="w-full bg-transparent border border-red-700 rounded py-3 px-2"
-              placeholder="Your last name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-            />
-          </div>
-
-          <div className="mb-6">
+          <div>
             <label htmlFor="email" className="block mb-1 font-bold">
               Email
             </label>
@@ -101,13 +99,13 @@ export default function Register() {
               id="email"
               required
               className="w-full bg-transparent border border-red-700 rounded py-3 px-2"
-              placeholder="Your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="Your email"
             />
           </div>
 
-          <div className="mb-6">
+          <div>
             <label htmlFor="password" className="block mb-1 font-bold">
               Password
             </label>
@@ -116,13 +114,13 @@ export default function Register() {
               id="password"
               required
               className="w-full bg-transparent border border-red-700 rounded py-3 px-2"
-              placeholder="Your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              placeholder="Create a password"
             />
           </div>
 
-          <div className="mb-6">
+          <div>
             <label htmlFor="confirmPassword" className="block mb-1 font-bold">
               Confirm Password
             </label>
@@ -131,9 +129,9 @@ export default function Register() {
               id="confirmPassword"
               required
               className="w-full bg-transparent border border-red-700 rounded py-3 px-2"
-              placeholder="Confirm your password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Repeat your password"
             />
           </div>
 
@@ -145,6 +143,15 @@ export default function Register() {
             {loading ? "Registering..." : "Register"}
           </button>
         </form>
+        <div className="mt-6 text-center text-sm">
+          <span>Already have an account? </span>
+          <a
+            href="/login"
+            className="text-red-500 underline hover:text-red-700 transition-colors"
+          >
+            Log in here
+          </a>
+        </div>
       </div>
     </div>
   );

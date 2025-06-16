@@ -633,7 +633,10 @@ const handleFilterChange = (key, value, isCheckbox = false) => {
                 />
                 <g
                   className={`muscles ${
-                    filledMuscles.has("Gastrocnemius") ? "filled" : ""
+                    selected === "Gastrocnemius" ||
+                    filledMuscles.has("Gastrocnemius")
+                      ? "filled"
+                      : ""
                   }`}
                   data-muscle="Gastrocnemius"
                   data-name="Calfs"

@@ -20,13 +20,12 @@ import RequireAdmin from "../components/auth/RequireAdmin";
 export default function AppRoutes() {
   return (
     <Routes>
-
+      {/* Public routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<Register />} />
-
       <Route
-        // path="/"
-        // element={<Navigate to="/members/profile/personal" replace />}
+        path="/"
+        element={<Navigate to="/members/profile/personal" replace />}
       />
 
       {/* Admin */}
@@ -44,23 +43,18 @@ export default function AppRoutes() {
       </Route>
 
       {/* Member */}
-      <Route
-        path="/members/profile"
-        element={
-          <RequireAuth>
-            <ProfileLayout />
-          </RequireAuth>
-        }
-      >
-        <Route index element={<Navigate to="personal" replace />} />
-        <Route path="personal" element={<PersonalDetails />} />
-        <Route path="memberships" element={<Memberships />} />
-        <Route path="measurements" element={<Measurements />} />
-        <Route path="training" element={<Training />} />
-        <Route path="nutrition" element={<Nutrition />} />
-        <Route path="health" element={<Health />} />
-        <Route path="goals" element={<Goals />} />
-        <Route path="achievements" element={<Achievements />} />
+      <Route path="/members/profile" element={<RequireAuth />}>
+        <Route element={<ProfileLayout />}>
+          <Route index element={<Navigate to="personal" replace />} />
+          <Route path="personal" element={<PersonalDetails />} />
+          <Route path="memberships" element={<Memberships />} />
+          <Route path="measurements" element={<Measurements />} />
+          <Route path="training" element={<Training />} />
+          <Route path="nutrition" element={<Nutrition />} />
+          <Route path="health" element={<Health />} />
+          <Route path="goals" element={<Goals />} />
+          <Route path="achievements" element={<Achievements />} />
+        </Route>
       </Route>
 
       <Route
