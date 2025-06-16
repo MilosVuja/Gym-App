@@ -19,9 +19,9 @@ const handleSubmit = async (e) => {
   try {
     const response = await axios.post(
       "http://localhost:3000/api/v1/auth/login",
-      { email, password }
+      { email, password },
+      { withCredentials: true }
     );
-    localStorage.setItem("token", response.data.token);
 
     if (response.data.data?.member) {
       setMember(response.data.data.member);
