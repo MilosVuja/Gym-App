@@ -3,6 +3,7 @@ import SvgTooltip from "../../components/SVGTooltip";
 import ExerciseCardTraining from "../../components/training/MakeYourTraining/ExerciseCardTraining";
 import ExerciseModal from "../../components/ExerciseModal";
 import CheckboxDropdown from "../../components/training/MakeYourTraining/CheckboxDropdown";
+import SupersetCard from "../../components/training/MakeYourTraining/SuperSetCard";
 
 export default function CreateTrainingPlan() {
   const [duration, setDuration] = useState("");
@@ -151,18 +152,18 @@ export default function CreateTrainingPlan() {
     });
   };
 
-const handleFilterChange = (key, value, isCheckbox = false) => {
-  setFilters((prev) => {
-    if (isCheckbox) {
-      return {
-        ...prev,
-        [key]: value,
-      };
-    } else {
-      return { ...prev, [key]: value };
-    }
-  });
-};
+  const handleFilterChange = (key, value, isCheckbox = false) => {
+    setFilters((prev) => {
+      if (isCheckbox) {
+        return {
+          ...prev,
+          [key]: value,
+        };
+      } else {
+        return { ...prev, [key]: value };
+      }
+    });
+  };
 
   const fetchExercises = () => {
     const muscleNames = selectedMuscles.map((m) => m.name);
@@ -218,39 +219,142 @@ const handleFilterChange = (key, value, isCheckbox = false) => {
 
   const handleDrop = (e, index) => {
     e.preventDefault();
+
     if (draggedId === null) return;
 
     const draggedIndex = chosenExercises.findIndex(
-      (ex) => ex._id === draggedId
+      (item) => item._id === draggedId
     );
     if (draggedIndex === -1 || draggedIndex === index) return;
 
     const updated = [...chosenExercises];
-    const [movedExercise] = updated.splice(draggedIndex, 1);
-    updated.splice(index, 0, movedExercise);
+    const [movedItem] = updated.splice(draggedIndex, 1);
+    updated.splice(index, 0, movedItem);
 
     setChosenExercises(updated);
     setDraggedId(null);
-  };
-
-  const handleDropFromAvailable = (e) => {
-    e.preventDefault();
-    const jsonData = e.dataTransfer.getData("application/json");
-    if (!jsonData) return;
-
-    const exercise = JSON.parse(jsonData);
-    if (chosenExercises.some((ex) => ex._id === exercise._id)) return;
-
-    setChosenExercises((prev) => [...prev, exercise]);
   };
 
   const handleRemove = (id) => {
     setChosenExercises((prev) => prev.filter((ex) => ex._id !== id));
   };
 
+  const handleAddSuperset = () => {
+    const newSuperset = {
+      _id: `superset-${Date.now()}`,
+      type: "superset",
+      exercises: [],
+    };
+    setChosenExercises((prev) => [...prev, newSuperset]);
+  };
+
+  const handleRemoveSuperset = (supersetId) => {
+    setChosenExercises((prev) =>
+      prev.filter((item) => item._id !== supersetId)
+    );
+  };
+
+  const handleDropFromAvailable = (e) => {
+    e.preventDefault();
+    const jsonData = e.dataTransfer.getData("application/json");
+    if (!jsonData) return;
+    const dragged = JSON.parse(jsonData);
+
+    const exists = chosenExercises.some((ex) => ex._id === dragged._id);
+    if (exists) return;
+
+    setChosenExercises((prev) => [...prev, dragged]);
+  };
+
+  const handleDropIntoSuperset = (supersetId, droppedExercise) => {
+    setChosenExercises((prev) =>
+      prev.map((item) => {
+        if (item._id === supersetId) {
+          if (item.exercises.some((ex) => ex._id === droppedExercise._id))
+            return item;
+
+          return {
+            ...item,
+            exercises: [...item.exercises, droppedExercise],
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const handleRemoveFromSuperset = (supersetId, exerciseId) => {
+    setChosenExercises((prev) =>
+      prev.map((item) => {
+        if (item._id === supersetId) {
+          return {
+            ...item,
+            exercises: item.exercises.filter((ex) => ex._id !== exerciseId),
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const handleMoveBetweenSupersets = (sourceId, targetId, exerciseId) => {
+    setChosenExercises((prev) => {
+      let movedExercise = null;
+
+      const updated = prev.map((item) => {
+        if (item._id === sourceId) {
+          const filtered = item.exercises.filter((ex) => {
+            if (ex._id === exerciseId) {
+              movedExercise = ex;
+              return false;
+            }
+            return true;
+          });
+          return { ...item, exercises: filtered };
+        }
+        return item;
+      });
+
+      if (!movedExercise) return prev;
+
+      return updated.map((item) => {
+        if (item._id === targetId) {
+          return { ...item, exercises: [...item.exercises, movedExercise] };
+        }
+        return item;
+      });
+    });
+  };
+
+  const handleReorderExerciseInSuperset = (
+    supersetId,
+    draggedExerciseId,
+    targetIndex
+  ) => {
+    setChosenExercises((prev) =>
+      prev.map((item) => {
+        if (item._id === supersetId) {
+          const fromIndex = item.exercises.findIndex(
+            (ex) => ex._id === draggedExerciseId
+          );
+          if (fromIndex === -1 || fromIndex === targetIndex) return item;
+
+          const reordered = [...item.exercises];
+          const [moved] = reordered.splice(fromIndex, 1);
+          reordered.splice(targetIndex, 0, moved);
+
+          return { ...item, exercises: reordered };
+        }
+        return item;
+      })
+    );
+  };
+
   return (
     <div id="wrapper" className="w-full bg-black text-white font-sans p-8">
-      <h2 className="text-4xl text-red-600 font-bold font-handwriting mb-8 text-center">Training Maker</h2>
+      <h2 className="text-4xl text-red-600 font-bold font-handwriting mb-8 text-center">
+        Training Maker
+      </h2>
       <div className="flex justify-evenly mb-10">
         <div id="basic-info">
           <div className="mb-4 flex flex-col" id="plan-name">
@@ -633,10 +737,7 @@ const handleFilterChange = (key, value, isCheckbox = false) => {
                 />
                 <g
                   className={`muscles ${
-                    selected === "Gastrocnemius" ||
-                    filledMuscles.has("Gastrocnemius")
-                      ? "filled"
-                      : ""
+                    filledMuscles.has("Gastrocnemius") ? "filled" : ""
                   }`}
                   data-muscle="Gastrocnemius"
                   data-name="Calfs"
@@ -986,39 +1087,90 @@ const handleFilterChange = (key, value, isCheckbox = false) => {
           <div
             id="chosen-exercises"
             className="mt-6 rounded-xl shadow-md border border-gray-200 p-4 space-y-4 flex flex-wrap gap-4"
-            onDragOver={handleDragOver}
+            onDragOver={(e) => e.preventDefault()}
             onDrop={handleDropFromAvailable}
           >
-            <h3 className="w-full text-xl font-semibold text-gray-800 mb-2">
-              Your Chosen Exercises
-            </h3>
+            <div className="flex justify-between items-center w-full">
+              <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                Your Chosen Exercises
+              </h3>
+              <button
+                onClick={handleAddSuperset}
+                className="bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700"
+              >
+                + Add Superset
+              </button>
+            </div>
+
             {chosenExercises.length === 0 ? (
               <p className="text-gray-500 italic w-full">
                 No exercises added yet. Drag them here!
               </p>
             ) : (
-              chosenExercises.map((exercise, index) => (
-                <div
-                  key={exercise._id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, exercise._id)}
-                  onDragOver={handleDragOver}
-                  onDrop={(e) => handleDrop(e, index)}
-                >
-                  <ExerciseCardTraining
-                    exercise={exercise}
-                    index={index}
-                    position={index + 1}
-                    showPosition
-                    showRemoveButton
-                    onRemove={handleRemove}
-                    onClick={() => {
-                      setSelectedExercise(exercise);
-                      setModalOpen(true);
-                    }}
-                  />
-                </div>
-              ))
+              <div className="flex flex-wrap gap-4 items-start">
+                {chosenExercises.map((exercise, index) => {
+                  if (exercise.type === "superset") {
+                    return (
+                      <div
+                        key={exercise._id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, exercise._id)}
+                        onDrop={(e) => handleDrop(e, index)}
+                        onDragOver={(e) => e.preventDefault()}
+                      >
+                        <SupersetCard
+                          superset={exercise}
+                          index={index}
+                          position={index + 1}
+                          onDropExercise={(e) => {
+                            e.preventDefault();
+                            const jsonData =
+                              e.dataTransfer.getData("application/json");
+                            if (!jsonData) return;
+                            const dragged = JSON.parse(jsonData);
+                            handleDropIntoSuperset(exercise._id, dragged);
+                          }}
+                          onRemoveExercise={(supersetId, exerciseId) =>
+                            handleRemoveFromSuperset(supersetId, exerciseId)
+                          }
+                          onRemoveSuperset={() =>
+                            handleRemoveSuperset(exercise._id)
+                          }
+                          onDragStart={handleDragStart}
+                          onDragOver={(e) => e.preventDefault()}
+                          isDragging={draggedId === exercise._id}
+                          onMoveBetweenSupersets={handleMoveBetweenSupersets}
+                          onReorderExerciseInSuperset={
+                            handleReorderExerciseInSuperset
+                          }
+                        />
+                      </div>
+                    );
+                  }
+                  return (
+                    <div
+                      key={exercise._id}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, exercise._id)}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragOver={(e) => e.preventDefault()}
+                    >
+                      <ExerciseCardTraining
+                        exercise={exercise}
+                        index={index}
+                        position={index + 1}
+                        showPosition
+                        showRemoveButton
+                        onRemove={handleRemove}
+                        onClick={() => {
+                          setSelectedExercise(exercise);
+                          setModalOpen(true);
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         </>

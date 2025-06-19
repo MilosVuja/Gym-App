@@ -14,7 +14,8 @@ export default function ExerciseCardTraining({
       draggable={draggable}
       onDragStart={
         onDragStart ||
-        ((e) => e.dataTransfer.setData("text/html", e.currentTarget.outerHTML))
+        ((e) =>
+          e.dataTransfer.setData("application/json", JSON.stringify(exercise)))
       }
       className="relative border border-gray-300 p-2.5 m-2.5 rounded-lg w-[320px] cursor-grab select-none shadow-sm"
     >
@@ -32,7 +33,7 @@ export default function ExerciseCardTraining({
         </button>
       )}
 
-      <h3 className="text-lg font-semibold mb-2 pr-6">{exercise.name}</h3>
+      <h3 className="text-lg text-center font-semibold mb-2 pr-6">{exercise.name}</h3>
 
       <div className="relative">
         <img
