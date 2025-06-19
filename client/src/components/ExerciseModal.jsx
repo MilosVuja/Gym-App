@@ -2,19 +2,18 @@ import { useState } from "react";
 import { FaTrash, FaRegCopy } from "react-icons/fa";
 
 export default function ExerciseModal({
-  exerciseName = "Name of the exercise",
-  videoSrc = "",
-  initialInstructions = "",
+  exerciseName,
+  videoSrc,
+  initialInstructions,
   onClose,
   onSave,
-  show = false,
 }) {
   const [rows, setRows] = useState([
-    { id: Date.now(), sets: 0, reps: 0, weight: 0, rest: 0 },
+    { id: Date.now(), reps: 0, weight: 0, rest: 0 },
   ]);
   const [instructions, setInstructions] = useState(initialInstructions);
-
-  if (!show) return null;
+  const [draggedId, setDraggedId] = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
 
   const updateField = (rowId, field, deltaOrValue, isDelta = true) => {
     setRows((prev) =>
@@ -36,7 +35,7 @@ export default function ExerciseModal({
   const addRow = () => {
     setRows((prev) => [
       ...prev,
-      { id: Date.now(), sets: 0, reps: 0, weight: 0, rest: 0 },
+      { id: crypto.randomUUID(), reps: 0, weight: 0, rest: 0 },
     ]);
   };
 
@@ -59,6 +58,39 @@ export default function ExerciseModal({
 
   const handleSave = () => {
     if (onSave) onSave({ rows, instructions });
+  };
+
+  const handleDragStart = (e, rowId) => {
+    setDraggedId(rowId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e, rowId) => {
+    e.preventDefault();
+    setDragOverId(rowId);
+  };
+
+  const handleDrop = (e, rowId) => {
+    e.preventDefault();
+    if (draggedId === null) return;
+
+    if (draggedId === rowId) return;
+
+    const draggedIndex = rows.findIndex((r) => r.id === draggedId);
+    const dropIndex = rows.findIndex((r) => r.id === rowId);
+
+    const updatedRows = [...rows];
+    const [draggedRow] = updatedRows.splice(draggedIndex, 1);
+    updatedRows.splice(dropIndex, 0, draggedRow);
+
+    setRows(updatedRows);
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedId(null);
+    setDragOverId(null);
   };
 
   return (
@@ -121,13 +153,26 @@ export default function ExerciseModal({
               </div>
             </div>
 
-            {rows.map((row) => (
+            {rows.map((row, index) => (
               <div
                 key={row.id}
-                className="exercise-row flex flex-col border border-red-900 p-4 first:rounded-t-md"
+                className={`exercise-row flex flex-col border border-red-900 p-4 first:rounded-t-md
+      ${dragOverId === row.id ? "bg-red-900/50" : ""}
+      ${draggedId === row.id ? "opacity-50" : "opacity-100"}
+      ${draggedId === row.id ? "cursor-grabbing" : "cursor-grab"}
+    `}
+                draggable
+                onDragStart={(e) => handleDragStart(e, row.id)}
+                onDragOver={(e) => handleDragOver(e, row.id)}
+                onDrop={(e) => handleDrop(e, row.id)}
+                onDragEnd={handleDragEnd}
               >
                 <div className="input-row grid grid-cols-5 place-items-center">
-                  {["sets", "reps", "weight", "rest"].map((field) => (
+                  <div className="exercise-field flex flex-col items-center justify-center font-bold text-lg select-none">
+                    {index + 1}
+                  </div>
+
+                  {["reps", "weight", "rest"].map((field) => (
                     <div
                       key={field}
                       className="exercise-field flex flex-col items-center justify-center"
