@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, Fragment } from "react";
 import SvgTooltip from "../../components/SVGTooltip";
 import ExerciseCardTraining from "../../components/training/MakeYourTraining/ExerciseCardTraining";
 import ExerciseModal from "../../components/ExerciseModal";
@@ -165,7 +165,7 @@ export default function CreateTrainingPlan() {
     });
   };
 
-  const fetchExercises = () => {
+  const fetchExercises = useCallback(() => {
     const muscleNames = selectedMuscles.map((m) => m.name);
     const queryParams = new URLSearchParams();
 
@@ -192,7 +192,7 @@ export default function CreateTrainingPlan() {
         }
       })
       .catch(() => alert("An error occurred while fetching exercises."));
-  };
+  }, [selectedMuscles, filters]);
 
   const handleShowExercisesClick = () => {
     if (!selectedMuscles?.length) {
@@ -207,14 +207,10 @@ export default function CreateTrainingPlan() {
     if (showContainers) {
       fetchExercises();
     }
-  }, [filters]);
+  }, [fetchExercises, showContainers]);
 
   const handleDragStart = (e, id) => {
     setDraggedId(id);
-  };
-
-  const handleDragOver = (e) => {
-    e.preventDefault();
   };
 
   const handleDrop = (e, index) => {
@@ -1108,16 +1104,25 @@ export default function CreateTrainingPlan() {
               </p>
             ) : (
               <div className="flex flex-wrap gap-4 items-start">
-                {chosenExercises.map((exercise, index) => {
-                  if (exercise.type === "superset") {
-                    return (
-                      <div
-                        key={exercise._id}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, exercise._id)}
-                        onDrop={(e) => handleDrop(e, index)}
-                        onDragOver={(e) => e.preventDefault()}
-                      >
+                {chosenExercises.map((exercise, index) => (
+                  <div
+                    key={exercise._id}
+                    className="relative"
+                    onDragOver={(e) => e.preventDefault()}
+                  >
+                    <div
+                      onDrop={(e) => handleDrop(e, index)}
+                      className="absolute inset-0 -m-10 z-0"
+                    ></div>
+
+                    <div
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, exercise._id)}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onDragOver={(e) => e.preventDefault()}
+                      className="relative z-10"
+                    >
+                      {exercise.type === "superset" ? (
                         <SupersetCard
                           superset={exercise}
                           index={index}
@@ -1130,46 +1135,36 @@ export default function CreateTrainingPlan() {
                             const dragged = JSON.parse(jsonData);
                             handleDropIntoSuperset(exercise._id, dragged);
                           }}
-                          onRemoveExercise={(supersetId, exerciseId) =>
-                            handleRemoveFromSuperset(supersetId, exerciseId)
-                          }
+                          onRemoveExercise={handleRemoveFromSuperset}
                           onRemoveSuperset={() =>
                             handleRemoveSuperset(exercise._id)
                           }
                           onDragStart={handleDragStart}
-                          onDragOver={(e) => e.preventDefault()}
-                          isDragging={draggedId === exercise._id}
-                          onMoveBetweenSupersets={handleMoveBetweenSupersets}
                           onReorderExerciseInSuperset={
                             handleReorderExerciseInSuperset
                           }
+                          onMoveBetweenSupersets={handleMoveBetweenSupersets}
+                          isDragging={draggedId === exercise._id}
+                          setSelectedExercise={setSelectedExercise}
+                          setModalOpen={setModalOpen}
                         />
-                      </div>
-                    );
-                  }
-                  return (
-                    <div
-                      key={exercise._id}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, exercise._id)}
-                      onDrop={(e) => handleDrop(e, index)}
-                      onDragOver={(e) => e.preventDefault()}
-                    >
-                      <ExerciseCardTraining
-                        exercise={exercise}
-                        index={index}
-                        position={index + 1}
-                        showPosition
-                        showRemoveButton
-                        onRemove={handleRemove}
-                        onClick={() => {
-                          setSelectedExercise(exercise);
-                          setModalOpen(true);
-                        }}
-                      />
+                      ) : (
+                        <ExerciseCardTraining
+                          exercise={exercise}
+                          index={index}
+                          position={index + 1}
+                          showPosition
+                          showRemoveButton
+                          onRemove={handleRemove}
+                          onClick={() => {
+                            setSelectedExercise(exercise);
+                            setModalOpen(true);
+                          }}
+                        />
+                      )}
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             )}
           </div>

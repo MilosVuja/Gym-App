@@ -9,6 +9,8 @@ export default function SupersetCard({
   onDragStart,
   onDragOver,
   onReorderExerciseInSuperset,
+  setSelectedExercise,
+  setModalOpen,
 }) {
   const handleDrop = (e) => {
     e.preventDefault();
@@ -24,19 +26,17 @@ export default function SupersetCard({
     if (alreadyExists) return;
 
     const newExercises = [...superset.exercises, dragged];
-    onDropExercise &&
-      onDropExercise(e, {
-        supersetId: superset._id,
-        newExercises,
-      });
+    onDropExercise?.(e, {
+      supersetId: superset._id,
+      newExercises,
+    });
   };
 
   return (
     <div
-      className={`relative p-2.5 m-2.5 rounded-lg 
-    cursor-grab select-none shadow-sm transition-all duration-300 
-    ${superset.exercises.length > 0 ? "w-full flex-wrap" : "w-[340px]"}
-     border border-blue-800 gap-2`}
+      className={`relative p-2.5 m-2.5 rounded-lg border border-blue-800 shadow-sm transition-all duration-300 
+        ${superset.exercises.length > 0 ? "w-full flex-wrap" : "w-[340px]"} 
+        cursor-grab select-none gap-2`}
       draggable
       onDragStart={(e) => onDragStart(e, superset._id)}
       onDragOver={onDragOver}
@@ -55,7 +55,7 @@ export default function SupersetCard({
         Superset {position}
       </h4>
 
-      <div className="flex">
+      <div className="flex flex-wrap gap-2">
         {superset.exercises.map((exercise, idx) => (
           <div
             key={exercise._id}
@@ -81,8 +81,7 @@ export default function SupersetCard({
 
               if (dragged.sourceSupersetId === superset._id) {
                 onReorderExerciseInSuperset?.(superset._id, draggedId, idx);
-              }
-              else {
+              } else {
                 const alreadyExists = superset.exercises.some(
                   (ex) => ex._id === draggedId
                 );
@@ -102,7 +101,10 @@ export default function SupersetCard({
               showPosition
               showRemoveButton
               onRemove={() => onRemoveExercise(superset._id, exercise._id)}
-              onClick={() => {}}
+              onClick={() => {
+                setSelectedExercise(exercise);
+                setModalOpen(true);
+              }}
             />
           </div>
         ))}
