@@ -6,7 +6,7 @@ const sharp = require("sharp");
 const fs = require("fs");
 const path = require("path");
 const util = require("util");
-const TrainingPlan = require("../models/trainingPlanModel");
+const TrainingPlan = require("../models/trainingPlan/TrainingPlanModel");
 
 const unlink = util.promisify(fs.unlink);
 
@@ -282,11 +282,17 @@ exports.assignTrainingPlan = catchAsync(async (req, res, next) => {
 });
 
 exports.getTrainingProfile = catchAsync(async (req, res, next) => {
-  const member = await Member.findById(req.member.id)
-    .populate("activeTrainingPlan");
+  const member = await Member.findById(req.member.id).populate(
+    "activeTrainingPlan"
+  );
 
   if (!member || !member.activeTrainingPlan) {
-    return next(new AppError("No member found with that ID or there is no active training for this member!", 404));
+    return next(
+      new AppError(
+        "No member found with that ID or there is no active training for this member!",
+        404
+      )
+    );
   }
 
   res.status(200).json({

@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, Fragment } from "react";
+import { useState, useEffect, useCallback } from "react";
 import SvgTooltip from "../../components/SVGTooltip";
 import ExerciseCardTraining from "../../components/training/MakeYourTraining/ExerciseCardTraining";
 import ExerciseModal from "../../components/ExerciseModal";
 import CheckboxDropdown from "../../components/training/MakeYourTraining/CheckboxDropdown";
 import SupersetCard from "../../components/training/MakeYourTraining/SuperSetCard";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
 export default function CreateTrainingPlan() {
   const [duration, setDuration] = useState("");
@@ -21,6 +22,12 @@ export default function CreateTrainingPlan() {
   const [draggedId, setDraggedId] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState(null);
+
+  const [exerciseModalsData, setExerciseModalsData] = useState({});
+
+  const [savedDays, setSavedDays] = useState([]);
+
+  const trainingsLimitReached = savedDays.length >= Number(timesPerWeek);
 
   const [filters, setFilters] = useState({
     equipment: [],
@@ -59,6 +66,58 @@ export default function CreateTrainingPlan() {
       setTrainingInfo("");
     }
   }, [duration, timesPerWeek, startDate]);
+
+  useEffect(() => {
+    setChosenExercises((prevExercises) =>
+      prevExercises.map((exercise) => {
+        if (!exercise._id || exercise.type === "superset") return exercise;
+
+        const saved = localStorage.getItem(`exerciseData_${exercise._id}`);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            return {
+              ...exercise,
+              rows: parsed.rows || [],
+              instructions: parsed.instructions || "",
+            };
+          } catch (error) {
+            console.error(
+              "Failed to parse exercise data from localStorage",
+              error
+            );
+          }
+        }
+
+        return exercise;
+      })
+    );
+  }, [showContainers]);
+
+  useEffect(() => {
+    const storedDays = getSavedDaysFromLocalStorage();
+    console.log("Saved Days:", storedDays);
+    setSavedDays(storedDays);
+  }, []);
+
+  useEffect(() => {
+    // Get all saved training days from localStorage
+    const savedDays = getSavedDaysFromLocalStorage();
+
+    if (savedDays.length === 0) return; // no saved days found
+
+    // Pick the last saved day (can change logic if needed)
+    const lastSavedDay = savedDays[savedDays.length - 1];
+
+    // Load saved training for that day into UI
+    handleEditDay(lastSavedDay);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      localStorage.setItem("chosenExercises", JSON.stringify(chosenExercises));
+    };
+  }, [chosenExercises]);
 
   const fetchMuscleInfo = async (e) => {
     const target = e.target.closest("[data-muscle]");
@@ -180,9 +239,10 @@ export default function CreateTrainingPlan() {
       }
     });
 
-    fetch(
-      `http://localhost:3000/api/v1/exercises/filter?${queryParams.toString()}`
-    )
+    const url = `http://localhost:3000/api/v1/exercises/filter?${queryParams.toString()}`;
+    console.log("Fetching exercises from:", url);
+
+    fetch(url)
       .then((res) => res.json())
       .then((data) => {
         if (data.status === "success") {
@@ -194,6 +254,30 @@ export default function CreateTrainingPlan() {
       .catch(() => alert("An error occurred while fetching exercises."));
   }, [selectedMuscles, filters]);
 
+  useEffect(() => {
+    if (showContainers && selectedMuscles.length > 0) {
+      fetchExercises();
+    }
+  }, [showContainers, selectedMuscles]);
+
+  useEffect(() => {
+    const daysFromStorage = [];
+    [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ].forEach((day) => {
+      if (localStorage.getItem(`training_day${day}`)) {
+        daysFromStorage.push(day);
+      }
+    });
+    setSavedDays(daysFromStorage);
+  }, []);
+
   const handleShowExercisesClick = () => {
     if (!selectedMuscles?.length) {
       alert("Please select at least one muscle.");
@@ -202,12 +286,6 @@ export default function CreateTrainingPlan() {
     setShowContainers(true);
     fetchExercises();
   };
-
-  useEffect(() => {
-    if (showContainers) {
-      fetchExercises();
-    }
-  }, [fetchExercises, showContainers]);
 
   const handleDragStart = (e, id) => {
     setDraggedId(id);
@@ -346,90 +424,407 @@ export default function CreateTrainingPlan() {
     );
   };
 
+  const handleModalSave = (exerciseId, data) => {
+    setExerciseModalsData((prev) => ({
+      ...prev,
+      [exerciseId]: data, // ✅ Save per exercise ID
+    }));
+  };
+
+  const handleSaveDayToLocalStorage = () => {
+    if (!trainingDays.length) {
+      alert("Please select at least one training day.");
+      return;
+    }
+
+    // Prepare exercises with full exercise data + modal info (instructions, sets)
+    const preparedExercises = chosenExercises.map((exercise) => {
+      if (exercise.type === "superset") {
+        return {
+          ...exercise,
+          exercises: exercise.exercises.map((ex) => {
+            const modalData = exerciseModalsData[ex._id] || {};
+            return {
+              ...ex, // save full exercise object, not just ID
+              instructions: modalData.instructions || "",
+              rows: modalData.rows || [],
+            };
+          }),
+        };
+      }
+
+      const modalData = exerciseModalsData[exercise._id] || {};
+      return {
+        ...exercise, // full exercise object
+        instructions: modalData.instructions || "",
+        rows: modalData.rows || [],
+      };
+    });
+
+    trainingDays.forEach((day) => {
+      const trainingForDay = {
+        day,
+        trainingType: filters.trainingType || "General",
+        exercises: preparedExercises,
+        selectedMuscles,
+      };
+      localStorage.setItem(
+        `training_day_${day}`,
+        JSON.stringify(trainingForDay)
+      );
+    });
+
+    alert("Training for selected day(s) saved.");
+
+    const updatedSavedDays = getSavedDaysFromLocalStorage();
+    setSavedDays(updatedSavedDays);
+
+    // Reset UI
+    setSelectedMuscles([]);
+    setFilledMuscles(new Set());
+    setChosenExercises([]);
+    setShowContainers(false);
+    setSelected(null);
+    setSelectedMuscleInfo(null);
+    setFilters({
+      equipment: [],
+      movement: [],
+      trainingType: "",
+      category: "",
+      search: "",
+    });
+    setTrainingDays([]);
+  };
+
+  const handleSaveTrainingPlan = async () => {
+    const name = document.getElementById("name").value.trim();
+    const description = document.getElementById("description").value.trim();
+
+    if (
+      !name ||
+      !description ||
+      !startDate ||
+      !duration ||
+      !timesPerWeek ||
+      trainingDays.length === 0
+    ) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+
+    const preparedExercises = chosenExercises.map((exercise) => {
+      if (exercise.type === "superset") {
+        return {
+          ...exercise,
+          exercises: exercise.exercises.map((ex) => {
+            const saved =
+              JSON.parse(localStorage.getItem(`exerciseData_${ex._id}`)) || {};
+            return {
+              exercise: ex._id,
+              instructions: saved.instructions || "",
+              sets: saved.rows || [],
+            };
+          }),
+        };
+      }
+
+      const saved =
+        JSON.parse(localStorage.getItem(`exerciseData_${exercise._id}`)) || {};
+      return {
+        exercise: exercise._id,
+        instructions: saved.instructions || "",
+        sets: saved.rows || [],
+      };
+    });
+
+    const trainingDayObject = trainingDays.map((day) => ({
+      day,
+      trainingType: filters.trainingType || "General",
+      exercises: preparedExercises,
+    }));
+
+    const payload = {
+      name,
+      description,
+      weekStart: startDate,
+      duration: Number(duration),
+      trainingsPerWeek: Number(timesPerWeek),
+      amountOfTrainings: Number(duration) * Number(timesPerWeek),
+      trainingDays: trainingDayObject,
+    };
+
+    try {
+      const res = await fetch(
+        "http://localhost:3000/api/v1/training-plans/add",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("Training plan saved successfully!");
+
+        chosenExercises.forEach((ex) => {
+          if (ex.type === "superset") {
+            ex.exercises.forEach((sub) =>
+              localStorage.removeItem(`exerciseData_${sub._id}`)
+            );
+          } else {
+            localStorage.removeItem(`exerciseData_${ex._id}`);
+          }
+        });
+
+        setChosenExercises([]);
+        setSelectedMuscles([]);
+        setFilledMuscles(new Set());
+        setTrainingDays([]);
+        setDuration("");
+        setTimesPerWeek("");
+        setStartDate("");
+        document.getElementById("name").value = "";
+        document.getElementById("description").value = "";
+      } else {
+        alert(data.message || "Failed to save training plan.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error while saving training plan.");
+    }
+  };
+
+  const getSavedDaysFromLocalStorage = () => {
+    const days = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
+
+    return days.filter((day) => localStorage.getItem(`training_day_${day}`));
+  };
+
+  const handleEditDay = (day) => {
+    const savedTrainingJSON = localStorage.getItem(`training_day_${day}`);
+    if (!savedTrainingJSON) {
+      alert("No saved training found for this day.");
+      return;
+    }
+
+    try {
+      const savedTraining = JSON.parse(savedTrainingJSON);
+
+      setTrainingDays([day]);
+
+      // ✅ Restore originally selected muscles
+      setSelectedMuscles(savedTraining.selectedMuscles || []);
+
+      // ✅ Restore filled muscles for SVG highlight
+      setFilledMuscles(
+        new Set((savedTraining.selectedMuscles || []).map((m) => m.latinName))
+      );
+
+      // ✅ Restore chosen exercises
+      setChosenExercises(savedTraining.exercises || []);
+
+      // ✅ Show exercise container UI
+      setShowContainers(true);
+
+      // ❗ fetchExercises will auto-trigger if showContainers and selectedMuscles are set
+    } catch (error) {
+      console.error("Failed to parse saved training", error);
+      alert("Failed to load saved training data.");
+    }
+  };
+
+  const handleDeleteDay = (day) => {
+    if (!window.confirm(`Are you sure you want to delete training for ${day}?`))
+      return;
+
+    const savedTrainingJSON = localStorage.getItem(`training_day_${day}`);
+    if (savedTrainingJSON) {
+      try {
+        const savedTraining = JSON.parse(savedTrainingJSON);
+
+        savedTraining.exercises.forEach((ex) => {
+          if (ex.type === "superset") {
+            ex.exercises.forEach((sub) =>
+              localStorage.removeItem(`exerciseData_${sub._id}`)
+            );
+          } else {
+            localStorage.removeItem(`exerciseData_${ex._id}`);
+          }
+        });
+      } catch (err) {
+        console.error("Error cleaning up modal data:", err);
+      }
+    }
+
+    localStorage.removeItem(`training_day_${day}`);
+
+    setExerciseModalsData({});
+
+    const remaining = savedDays.filter((d) => d !== day);
+    setSavedDays(remaining);
+
+    setChosenExercises([]);
+    setSelectedMuscles([]);
+    setFilledMuscles(new Set());
+    setTrainingDays([]);
+    setShowContainers(false);
+    setSelected(null);
+    setSelectedMuscleInfo(null);
+    setFilters({
+      equipment: [],
+      movement: [],
+      trainingType: "",
+      category: "",
+      search: "",
+    });
+  };
+
   return (
     <div id="wrapper" className="w-full bg-black text-white font-sans p-8">
       <h2 className="text-4xl text-red-600 font-bold font-handwriting mb-8 text-center">
         Training Maker
       </h2>
-      <div className="flex justify-evenly mb-10">
-        <div id="basic-info">
-          <div className="mb-4 flex flex-col" id="plan-name">
-            <label htmlFor="name">Plan Name:</label>
-            <input type="text" id="name" name="name" required />
-          </div>
-          <div className="mb-4 flex flex-col" id="plan-description">
-            <label htmlFor="description">Description:</label>
-            <textarea id="description" name="description" required />
-          </div>
-        </div>
-        <div id="plan-details" className="mb-10">
-          <div className="mb-4 flex flex-col" id="plan-duration">
-            <label htmlFor="duration">Duration (in weeks):</label>
-            <input
-              type="number"
-              id="duration"
-              name="duration"
-              required
-              min="1"
-              max="99"
-              onChange={(e) => setDuration(e.target.value)}
-            />
-          </div>
-          <div className="mb-4 flex flex-col" id="plan-times-per-week">
-            <label htmlFor="times-per-week">How many trainings per week?</label>
-            <input
-              type="number"
-              id="times-per-week"
-              name="times-per-week"
-              required
-              min="2"
-              max="7"
-              onChange={(e) => setTimesPerWeek(e.target.value)}
-              className="no-spinner "
-            />
-          </div>
-          <div className="mb-4 flex flex-col" id="plan-start-date">
-            <label htmlFor="weekStart">Start Date:</label>
-            <input
-              type="date"
-              id="weekStart"
-              name="weekStart"
-              onChange={(e) => setStartDate(e.target.value)}
-              required
-            />
-          </div>
-          <p id="plan-training-dates"></p>
-        </div>
-      </div>
-
-      <section id="trainingDays" className="mb-10">
-        <h3 className="text-xl mb-4">Select Training Days</h3>
-        <div className="flex gap-4">
-          {[
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
-            "Sunday",
-          ].map((day) => (
-            <div
-              key={day}
-              className={`border px-4 py-2 cursor-pointer ${
-                trainingDays.includes(day) ? "bg-red-700" : "hover:bg-red-700"
-              }`}
-              onClick={() => toggleDaySelection(day)}
-            >
-              {day.slice(0, 3)}
+      <div>
+        <div className="flex justify-evenly mb-10">
+          <div id="basic-info">
+            <div className="mb-4 flex flex-col" id="plan-name">
+              <label htmlFor="name">Plan Name:</label>
+              <input type="text" id="name" name="name" required />
             </div>
-          ))}
+            <div className="mb-4 flex flex-col" id="plan-description">
+              <label htmlFor="description">Description:</label>
+              <textarea id="description" name="description" required />
+            </div>
+          </div>
+          <div id="plan-details" className="mb-10">
+            <div className="mb-4 flex flex-col" id="plan-duration">
+              <label htmlFor="duration">Duration (in weeks):</label>
+              <input
+                type="number"
+                id="duration"
+                name="duration"
+                required
+                min="1"
+                max="99"
+                onChange={(e) => setDuration(e.target.value)}
+              />
+            </div>
+            <div className="mb-4 flex flex-col" id="plan-times-per-week">
+              <label htmlFor="times-per-week">
+                How many trainings per week?
+              </label>
+              <input
+                type="number"
+                id="times-per-week"
+                name="times-per-week"
+                required
+                min="2"
+                max="7"
+                onChange={(e) => setTimesPerWeek(e.target.value)}
+                className="no-spinner "
+              />
+            </div>
+            <div className="mb-4 flex flex-col" id="plan-start-date">
+              <label htmlFor="weekStart">Start Date:</label>
+              <input
+                type="date"
+                id="weekStart"
+                name="weekStart"
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+              />
+            </div>
+            <p id="plan-training-dates"></p>
+          </div>
         </div>
         {trainingInfo && (
           <p id="training-dates" className="mt-4 text-green-500">
             {trainingInfo}
           </p>
         )}
+      </div>
+
+      <section id="trainingDays" className="flex gap-20 mb-10">
+        <div>
+          <h3 className="text-xl mb-4">Select Training Days</h3>
+          <div className="flex flex-wrap items-start gap-8">
+            <div className="flex gap-4 flex-wrap items-center">
+              {[
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday",
+              ].map((day) => {
+                const isSaved = savedDays.includes(day);
+                const disabled = isSaved || trainingsLimitReached;
+
+                return (
+                  <div key={day} className="flex items-center space-x-2">
+                    <button
+                      className={`border px-4 py-2 rounded ${
+                        disabled
+                          ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                          : trainingDays.includes(day)
+                          ? "bg-red-700"
+                          : "hover:bg-red-700"
+                      }`}
+                      onClick={() => !disabled && toggleDaySelection(day)}
+                      disabled={disabled}
+                    >
+                      {day.slice(0, 3)}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        <div>
+          {savedDays.length > 0 && (
+            <div className="">
+              <h3 className="text-xl mb-4">Saved Trainings</h3>
+              <div className="flex gap-3 flex-wrap items-center">
+                {savedDays.map((day) => (
+                  <div
+                    key={day}
+                    className="flex items-center space-x-2 border rounded px-3 py-2 bg-green-700 text-white"
+                  >
+                    <button className="font-semibold">{day.slice(0, 3)}</button>
+                    <button
+                      onClick={() => handleEditDay(day)}
+                      className="hover:text-yellow-300 cursor-pointer"
+                      aria-label={`Edit training for ${day}`}
+                    >
+                      <FaEdit />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteDay(day)}
+                      className="hover:text-red-500"
+                      aria-label={`Delete training for ${day}`}
+                    >
+                      <FaTrash />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       <div id="muscle-select" className="flex gap-10">
@@ -1173,23 +1568,34 @@ export default function CreateTrainingPlan() {
 
       {modalOpen && selectedExercise && (
         <ExerciseModal
+          exerciseId={selectedExercise._id}
           show={modalOpen}
           onClose={() => setModalOpen(false)}
           exerciseName={selectedExercise.name}
           videoSrc={selectedExercise.videoUrl}
+          initialRows={
+            exerciseModalsData[selectedExercise._id]?.rows || [
+              { id: Date.now(), reps: 0, weight: 0, rest: 0, dropsets: [] },
+            ]
+          }
           initialInstructions={selectedExercise.instructions || ""}
-          onSave={({ rows, instructions }) => {
-            setChosenExercises((prev) =>
-              prev.map((ex) =>
-                ex._id === selectedExercise._id
-                  ? { ...ex, rows, instructions }
-                  : ex
-              )
-            );
-            setModalOpen(false);
-          }}
+          onSave={(data) => handleModalSave(selectedExercise._id, data)}
         />
       )}
+
+      <button
+        onClick={handleSaveDayToLocalStorage}
+        className="mt-6 bg-yellow-600 px-6 py-2 rounded hover:bg-yellow-700"
+      >
+        Save Training For This Day
+      </button>
+
+      <button
+        onClick={handleSaveTrainingPlan}
+        className="mt-6 bg-green-600 px-6 py-2 rounded hover:bg-green-700"
+      >
+        Save Training Plan
+      </button>
     </div>
   );
 }

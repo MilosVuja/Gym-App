@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require('bcryptjs');
+const bcrypt = require("bcryptjs");
 
 const MemberSchema = new mongoose.Schema(
   {
@@ -28,6 +28,7 @@ const MemberSchema = new mongoose.Schema(
     trainingPlans: [
       { type: mongoose.Schema.Types.ObjectId, ref: "TrainingPlan" },
     ],
+
     completedSessions: [
       { type: mongoose.Schema.Types.ObjectId, ref: "CompletedSession" },
     ],
@@ -96,6 +97,20 @@ const MemberSchema = new mongoose.Schema(
 
     lastLogin: { type: Date },
     lastTrainingCompleted: { type: Date },
+
+    activeTrainingPlan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "TrainingPlan",
+    },
+
+    trainingHistory: [
+      {
+        plan: { type: mongoose.Schema.Types.ObjectId, ref: "TrainingPlan" },
+        startDate: { type: Date, default: Date.now },
+        endDate: { type: Date },
+        completed: { type: Boolean, default: false },
+      },
+    ],
   },
   {
     timestamps: true,

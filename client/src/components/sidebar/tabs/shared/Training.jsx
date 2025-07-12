@@ -9,8 +9,11 @@ export default function Training() {
   useEffect(() => {
     const fetchTrainingPlan = async () => {
       try {
-        const res = await fetch("/api/v1/training-plans/active");
+        const res = await fetch("http://localhost:3000/api/v1/training-plans/active", {
+          credentials: "include",
+        });
         const data = await res.json();
+        console.log("Training plan API response:", data);
         if (data.status === "success" && data.data?.activePlan) {
           setTrainingPlan(data.data.activePlan);
         }
@@ -30,8 +33,10 @@ export default function Training() {
     return (
       <div className="text-center mt-10">
         <h2 className="text-xl font-semibold mb-4">No active training plan</h2>
-        <Link to="/create-training-plan"
-           className="bg-blue-600 text-white px-4 py-2 rounded">
+        <Link
+          to="/create-training-plan"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
           Add Training Plan
         </Link>
       </div>

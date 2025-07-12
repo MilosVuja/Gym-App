@@ -14,7 +14,7 @@ const authRouter = require("./routes/authRoutes");
 const memberRouter = require("./routes/memberRoutes");
 const adminRouter = require("./routes/adminRoutes");
 const groupClassRouter = require("./routes/groupClassRoutes");
-const trainingPlanRouter = require("./routes/trainingPlanRoutes");
+const trainingPlanRouter = require("./routes/trainingPlan/trainingPlanRoutes");
 const musclesRouter = require("./routes/musclesRouter");
 const exercisesRouter = require("./routes/exercisesRoutes");
 
