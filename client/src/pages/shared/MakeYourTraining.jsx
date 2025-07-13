@@ -254,7 +254,7 @@ export default function CreateTrainingPlan() {
     if (showContainers && selectedMuscles.length > 0) {
       fetchExercises();
     }
-  }, [showContainers, selectedMuscles]);
+  }, [showContainers, selectedMuscles, fetchExercises]);
 
   useEffect(() => {
     const daysFromStorage = [];

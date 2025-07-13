@@ -32,14 +32,8 @@ exports.getExercise = catchAsync(async (req, res, next) => {
 exports.getFilteredExercises = catchAsync(async (req, res, next) => {
   let filter = {};
 
-  const {
-    search,
-    muscles,
-    trainingType,
-    category,
-    equipment,
-    movement,
-  } = req.query;
+  const { search, muscles, trainingType, category, equipment, movement } =
+    req.query;
 
   if (search) {
     filter.$text = { $search: search };
@@ -104,8 +98,12 @@ exports.addExercise = [
       tags,
     } = req.body;
 
-    const musclesArray = Array.isArray(muscles) ? muscles : [muscles].filter(Boolean);
-    const equipmentArray = Array.isArray(equipment) ? equipment : [equipment].filter(Boolean);
+    const musclesArray = Array.isArray(muscles)
+      ? muscles
+      : [muscles].filter(Boolean);
+    const equipmentArray = Array.isArray(equipment)
+      ? equipment
+      : [equipment].filter(Boolean);
     const tagsArray = Array.isArray(tags) ? tags : [tags].filter(Boolean);
 
     if (musclesArray.length === 0) {
@@ -145,3 +143,32 @@ exports.addExercise = [
   }),
 ];
 
+exports.getExerciseOptions = catchAsync(async (req, res, next) => {
+  const schemaPaths = Exercises.schema.paths;
+
+  const getEnumValues = (path) => {
+    const schemaType = schemaPaths[path];
+    if (!schemaType) return [];
+
+    if (schemaType.caster && schemaType.caster.enumValues) {
+      return schemaType.caster.enumValues;
+    }
+
+    if (schemaType.enumValues) {
+      return schemaType.enumValues;
+    }
+
+    return [];
+  };
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      equipment: getEnumValues("equipment"),
+      movement: getEnumValues("movement"),
+      trainingType: getEnumValues("trainingType"),
+      category: getEnumValues("category"),
+      tags: getEnumValues("tags"),
+    },
+  });
+});

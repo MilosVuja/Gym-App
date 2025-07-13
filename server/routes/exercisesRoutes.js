@@ -7,6 +7,7 @@ const router = express.Router();
 //exercises
 router.get("/",  exercisesController.getAllExercises);
 router.get("/filter",  exercisesController.getFilteredExercises);
+router.get("/options", exercisesController.getExerciseOptions);
 
 router.get("/:id",  exercisesController.getExercise);
 

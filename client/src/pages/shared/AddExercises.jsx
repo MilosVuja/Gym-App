@@ -3,6 +3,14 @@ import { FaTrash } from "react-icons/fa";
 
 export default function AddExercises() {
   const [muscles, setMuscles] = useState([]);
+  const [exerciseOptions, setExerciseOptions] = useState({
+    equipment: [],
+    movement: [],
+    trainingType: [],
+    category: [],
+    tags: [],
+  });
+
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -25,6 +33,7 @@ export default function AddExercises() {
     const fetchMuscles = async () => {
       try {
         const res = await fetch("http://localhost:3000/api/v1/muscles");
+        if (!res.ok) throw new Error("Failed to fetch muscles");
         const json = await res.json();
         setMuscles(json.data.muscles || []);
       } catch (err) {
@@ -33,6 +42,29 @@ export default function AddExercises() {
       }
     };
     fetchMuscles();
+  }, []);
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const res = await fetch(
+          "http://localhost:3000/api/v1/exercises/options"
+        );
+        if (!res.ok) throw new Error("Failed to fetch options");
+        const json = await res.json();
+
+        setExerciseOptions({
+          equipment: json.data.equipment || [],
+          movement: json.data.movement || [],
+          trainingType: json.data.trainingType || [],
+          category: json.data.category || [],
+          tags: json.data.tags || [],
+        });
+      } catch (err) {
+        console.error("Error fetching options:", err);
+      }
+    };
+    fetchOptions();
   }, []);
 
   const handleInputChange = (e) => {
@@ -50,10 +82,7 @@ export default function AddExercises() {
         ...prev,
         [name]: value,
       }));
-
-      if (name === "thumbnail") {
-        setThumbnailPreview(value);
-      }
+      if (name === "thumbnail") setThumbnailPreview(value);
     }
   };
 
@@ -66,7 +95,8 @@ export default function AddExercises() {
   const addDynamicField = (field) => {
     setFormData((prev) => {
       const values = prev[field];
-      if (values.includes("") || new Set(values).size !== values.length) return prev;
+      if (values.includes("") || new Set(values).size !== values.length)
+        return prev;
       return {
         ...prev,
         [field]: [...values, ""],
@@ -158,103 +188,6 @@ export default function AddExercises() {
     }
   };
 
-  const equipmentOptions = [
-    "Bodyweight",
-    "Dumbbell",
-    "Barbell",
-    "Kettlebell",
-    "Resistance Band",
-    "Cable",
-    "Machine",
-    "Smith Machine",
-    "Medicine Ball",
-    "Stability Ball",
-    "TRX",
-    "Step",
-    "Bench",
-    "Punching Bag",
-    "Battle Rope",
-    "Elliptical",
-    "Treadmill",
-    "Rowing Machine",
-    "Exercise Bike",
-    "Jump Rope",
-    "Sandbag",
-    "Sled",
-    "Foam Roller",
-    "Other",
-  ];
-
-  const movementOptions = [
-    "Push",
-    "Pull",
-    "Squat",
-    "Lunge",
-    "Hinge",
-    "Rotation",
-    "Anti-Extension",
-    "Anti-Rotation",
-    "Carry",
-    "Jump",
-    "Plyometric",
-    "Isometric",
-    "Stability",
-    "Flexion",
-    "Extension",
-    "Abduction",
-    "Adduction",
-    "Explosive",
-    "Dynamic",
-    "Static",
-    "Running",
-    "Rowing",
-    "Walking",
-    "Cycling",
-  ];
-
-  const trainingTypeOptions = [
-    "Strength",
-    "Cardio",
-    "Flexibility",
-    "Hypertrophy",
-    "Balance",
-    "HIIT",
-    "Endurance",
-    "Power",
-  ];
-
-  const categoryOptions = [
-    "Bodybuilding",
-    "CrossFit",
-    "Functional",
-    "Powerlifting",
-    "Yoga",
-    "Rehabilitation",
-  ];
-
-  const tagOptions = [
-    "Fat Loss",
-    "Muscle Gain",
-    "Endurance",
-    "Core Strength",
-    "Powerlifting",
-    "Athletic Training",
-    "Strength",
-    "Flexibility",
-    "Rehab",
-    "Mobility",
-    "Explosiveness",
-    "Grip Strength",
-    "Isometric",
-    "Plyometric",
-    "Full Body",
-    "Upper Body",
-    "Lower Body",
-    "Cardio",
-    "Bodyweight Only",
-    "Weightlifting",
-  ];
-
   return (
     <form
       onSubmit={handleSubmit}
@@ -279,12 +212,13 @@ export default function AddExercises() {
         onChange={handleInputChange}
         required
       />
+
       {thumbnailPreview && (
         <div className="mb-4">
           <label className="block font-medium mb-1">Image Preview</label>
           <img
             src={thumbnailPreview}
-            alt="Thumbnail preview"
+            alt="Preview"
             className="max-w-xs max-h-48 border rounded"
             onError={(e) => {
               e.target.onerror = null;
@@ -293,6 +227,7 @@ export default function AddExercises() {
           />
         </div>
       )}
+
       <Input
         label="Video URL"
         name="video"
@@ -312,7 +247,7 @@ export default function AddExercises() {
         label="Equipment"
         field="equipment"
         values={formData.equipment}
-        options={equipmentOptions}
+        options={exerciseOptions.equipment}
         onChange={handleDynamicChange}
         onAdd={() => addDynamicField("equipment")}
         onRemove={removeField}
@@ -332,7 +267,7 @@ export default function AddExercises() {
         label="Movement"
         field="movement"
         values={formData.movement}
-        options={movementOptions}
+        options={exerciseOptions.movement}
         onChange={handleDynamicChange}
         onAdd={() => addDynamicField("movement")}
         onRemove={removeField}
@@ -342,7 +277,7 @@ export default function AddExercises() {
         label="Training Type"
         field="trainingType"
         values={formData.trainingType}
-        options={trainingTypeOptions}
+        options={exerciseOptions.trainingType}
         onChange={handleDynamicChange}
         onAdd={() => addDynamicField("trainingType")}
         onRemove={removeField}
@@ -352,7 +287,7 @@ export default function AddExercises() {
         label="Category"
         field="category"
         values={formData.category}
-        options={categoryOptions}
+        options={exerciseOptions.category}
         onChange={handleDynamicChange}
         onAdd={() => addDynamicField("category")}
         onRemove={removeField}
@@ -361,7 +296,7 @@ export default function AddExercises() {
       <div className="mb-4">
         <label className="block font-semibold mb-2">Tags</label>
         <div className="grid grid-cols-2 gap-2">
-          {tagOptions.map((tag) => (
+          {exerciseOptions.tags.map((tag) => (
             <label key={tag} className="flex items-center">
               <input
                 type="checkbox"
@@ -420,7 +355,15 @@ function Textarea({ label, name, value, onChange, required }) {
   );
 }
 
-function DynamicSelects({ label, field, values, options, onChange, onAdd, onRemove }) {
+function DynamicSelects({
+  label,
+  field,
+  values,
+  options,
+  onChange,
+  onAdd,
+  onRemove,
+}) {
   return (
     <div className="mb-4">
       <label className="block font-semibold mb-2">{label}</label>
@@ -450,7 +393,7 @@ function DynamicSelects({ label, field, values, options, onChange, onAdd, onRemo
               type="button"
               onClick={() => onRemove(field, idx)}
               className="text-red-500 hover:text-red-700"
-              aria-label={`Remove ${label} selection`}
+              aria-label={`Remove ${label}`}
             >
               <FaTrash />
             </button>
