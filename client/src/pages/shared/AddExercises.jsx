@@ -6,6 +6,7 @@ export default function AddExercises() {
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [thumbnailPreview, setThumbnailPreview] = useState("");
 
   const [formData, setFormData] = useState({
     name: "",
@@ -49,6 +50,10 @@ export default function AddExercises() {
         ...prev,
         [name]: value,
       }));
+
+      if (name === "thumbnail") {
+        setThumbnailPreview(value);
+      }
     }
   };
 
@@ -61,8 +66,7 @@ export default function AddExercises() {
   const addDynamicField = (field) => {
     setFormData((prev) => {
       const values = prev[field];
-      if (values.includes("") || new Set(values).size !== values.length)
-        return prev;
+      if (values.includes("") || new Set(values).size !== values.length) return prev;
       return {
         ...prev,
         [field]: [...values, ""],
@@ -143,6 +147,7 @@ export default function AddExercises() {
           muscles: [""],
           tags: [],
         });
+        setThumbnailPreview("");
       } else {
         setErrorMsg(result.message || "Something went wrong.");
       }
@@ -179,6 +184,7 @@ export default function AddExercises() {
     "Foam Roller",
     "Other",
   ];
+
   const movementOptions = [
     "Push",
     "Pull",
@@ -205,6 +211,7 @@ export default function AddExercises() {
     "Walking",
     "Cycling",
   ];
+
   const trainingTypeOptions = [
     "Strength",
     "Cardio",
@@ -215,6 +222,7 @@ export default function AddExercises() {
     "Endurance",
     "Power",
   ];
+
   const categoryOptions = [
     "Bodybuilding",
     "CrossFit",
@@ -223,6 +231,7 @@ export default function AddExercises() {
     "Yoga",
     "Rehabilitation",
   ];
+
   const tagOptions = [
     "Fat Loss",
     "Muscle Gain",
@@ -270,6 +279,20 @@ export default function AddExercises() {
         onChange={handleInputChange}
         required
       />
+      {thumbnailPreview && (
+        <div className="mb-4">
+          <label className="block font-medium mb-1">Image Preview</label>
+          <img
+            src={thumbnailPreview}
+            alt="Thumbnail preview"
+            className="max-w-xs max-h-48 border rounded"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "";
+            }}
+          />
+        </div>
+      )}
       <Input
         label="Video URL"
         name="video"
@@ -294,6 +317,7 @@ export default function AddExercises() {
         onAdd={() => addDynamicField("equipment")}
         onRemove={removeField}
       />
+
       <DynamicSelects
         label="Muscles"
         field="muscles"
@@ -303,6 +327,7 @@ export default function AddExercises() {
         onAdd={() => addDynamicField("muscles")}
         onRemove={removeField}
       />
+
       <DynamicSelects
         label="Movement"
         field="movement"
@@ -312,6 +337,7 @@ export default function AddExercises() {
         onAdd={() => addDynamicField("movement")}
         onRemove={removeField}
       />
+
       <DynamicSelects
         label="Training Type"
         field="trainingType"
@@ -321,6 +347,7 @@ export default function AddExercises() {
         onAdd={() => addDynamicField("trainingType")}
         onRemove={removeField}
       />
+
       <DynamicSelects
         label="Category"
         field="category"
@@ -393,15 +420,7 @@ function Textarea({ label, name, value, onChange, required }) {
   );
 }
 
-function DynamicSelects({
-  label,
-  field,
-  values,
-  options,
-  onChange,
-  onAdd,
-  onRemove,
-}) {
+function DynamicSelects({ label, field, values, options, onChange, onAdd, onRemove }) {
   return (
     <div className="mb-4">
       <label className="block font-semibold mb-2">{label}</label>
@@ -414,23 +433,24 @@ function DynamicSelects({
             required
           >
             <option value="">Select {label.toLowerCase()}</option>
-            {options.map((opt) => {
-              const value = typeof opt === "string" ? opt : opt.value;
-              const labelText = typeof opt === "string" ? opt : opt.label;
-              const isUsed = values.includes(value) && value !== val;
-
-              return (
-                <option key={value} value={value} disabled={isUsed}>
-                  {labelText}
+            {options.map((opt) =>
+              typeof opt === "string" ? (
+                <option key={opt} value={opt}>
+                  {opt}
                 </option>
-              );
-            })}
+              ) : (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              )
+            )}
           </select>
           {values.length > 1 && (
             <button
               type="button"
               onClick={() => onRemove(field, idx)}
               className="text-red-500 hover:text-red-700"
+              aria-label={`Remove ${label} selection`}
             >
               <FaTrash />
             </button>
