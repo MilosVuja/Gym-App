@@ -101,15 +101,11 @@ export default function CreateTrainingPlan() {
   }, []);
 
   useEffect(() => {
-    // Get all saved training days from localStorage
     const savedDays = getSavedDaysFromLocalStorage();
 
-    if (savedDays.length === 0) return; // no saved days found
-
-    // Pick the last saved day (can change logic if needed)
+    if (savedDays.length === 0) return;
     const lastSavedDay = savedDays[savedDays.length - 1];
 
-    // Load saved training for that day into UI
     handleEditDay(lastSavedDay);
   }, []);
 
@@ -427,7 +423,7 @@ export default function CreateTrainingPlan() {
   const handleModalSave = (exerciseId, data) => {
     setExerciseModalsData((prev) => ({
       ...prev,
-      [exerciseId]: data, // ✅ Save per exercise ID
+      [exerciseId]: data,
     }));
   };
 
@@ -437,7 +433,6 @@ export default function CreateTrainingPlan() {
       return;
     }
 
-    // Prepare exercises with full exercise data + modal info (instructions, sets)
     const preparedExercises = chosenExercises.map((exercise) => {
       if (exercise.type === "superset") {
         return {
@@ -445,7 +440,7 @@ export default function CreateTrainingPlan() {
           exercises: exercise.exercises.map((ex) => {
             const modalData = exerciseModalsData[ex._id] || {};
             return {
-              ...ex, // save full exercise object, not just ID
+              ...ex,
               instructions: modalData.instructions || "",
               rows: modalData.rows || [],
             };
@@ -455,7 +450,7 @@ export default function CreateTrainingPlan() {
 
       const modalData = exerciseModalsData[exercise._id] || {};
       return {
-        ...exercise, // full exercise object
+        ...exercise,
         instructions: modalData.instructions || "",
         rows: modalData.rows || [],
       };
@@ -479,7 +474,6 @@ export default function CreateTrainingPlan() {
     const updatedSavedDays = getSavedDaysFromLocalStorage();
     setSavedDays(updatedSavedDays);
 
-    // Reset UI
     setSelectedMuscles([]);
     setFilledMuscles(new Set());
     setChosenExercises([]);
@@ -624,21 +618,16 @@ export default function CreateTrainingPlan() {
 
       setTrainingDays([day]);
 
-      // ✅ Restore originally selected muscles
       setSelectedMuscles(savedTraining.selectedMuscles || []);
 
-      // ✅ Restore filled muscles for SVG highlight
       setFilledMuscles(
         new Set((savedTraining.selectedMuscles || []).map((m) => m.latinName))
       );
 
-      // ✅ Restore chosen exercises
       setChosenExercises(savedTraining.exercises || []);
 
-      // ✅ Show exercise container UI
       setShowContainers(true);
 
-      // ❗ fetchExercises will auto-trigger if showContainers and selectedMuscles are set
     } catch (error) {
       console.error("Failed to parse saved training", error);
       alert("Failed to load saved training data.");

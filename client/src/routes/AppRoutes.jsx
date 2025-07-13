@@ -9,6 +9,7 @@ import Memberships from "../components/sidebar/tabs/shared/Memberships";
 import Nutrition from "../components/sidebar/tabs/shared/Nutrition";
 import Health from "../components/sidebar/tabs/shared/Health";
 import CreateTrainingPlan from "../pages/shared/MakeYourTraining";
+import AddExercises from "../pages/shared/AddExercises";
 
 import AdminApproval from "../pages/admin/AdminApproval";
 import LoginPage from "../pages/auth/Login";
@@ -62,6 +63,14 @@ export default function AppRoutes() {
         element={
           <RequireAuth>
             <CreateTrainingPlan />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/add-exercises"
+        element={
+          <RequireAuth>
+            <AddExercises />
           </RequireAuth>
         }
       />
