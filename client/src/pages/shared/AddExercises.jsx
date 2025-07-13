@@ -189,137 +189,158 @@ export default function AddExercises() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-2xl mx-auto p-6 bg-white shadow rounded-lg"
-    >
-      <h1 className="text-2xl font-bold mb-4">Add Exercise</h1>
+    <div className="min-h-screen bg-black text-white p-10 font-sans">
+      <h1 className="text-4xl text-red-600 font-bold mb-8 text-center font-handwriting">
+        Add New Exercise
+      </h1>
 
-      {successMsg && <div className="text-green-600 mb-4">{successMsg}</div>}
-      {errorMsg && <div className="text-red-600 mb-4">{errorMsg}</div>}
-
-      <Input
-        label="Name"
-        name="name"
-        value={formData.name}
-        onChange={handleInputChange}
-        required
-      />
-      <Input
-        label="Thumbnail URL"
-        name="thumbnail"
-        value={formData.thumbnail}
-        onChange={handleInputChange}
-        required
-      />
-
-      {thumbnailPreview && (
-        <div className="mb-4">
-          <label className="block font-medium mb-1">Image Preview</label>
-          <img
-            src={thumbnailPreview}
-            alt="Preview"
-            className="max-w-xs max-h-48 border rounded"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = "";
-            }}
-          />
-        </div>
-      )}
-
-      <Input
-        label="Video URL"
-        name="video"
-        value={formData.video}
-        onChange={handleInputChange}
-        required
-      />
-      <Textarea
-        label="Instruction"
-        name="instruction"
-        value={formData.instruction}
-        onChange={handleInputChange}
-        required
-      />
-
-      <DynamicSelects
-        label="Equipment"
-        field="equipment"
-        values={formData.equipment}
-        options={exerciseOptions.equipment}
-        onChange={handleDynamicChange}
-        onAdd={() => addDynamicField("equipment")}
-        onRemove={removeField}
-      />
-
-      <DynamicSelects
-        label="Muscles"
-        field="muscles"
-        values={formData.muscles}
-        options={muscles.map((m) => ({ value: m._id, label: m.name }))}
-        onChange={handleDynamicChange}
-        onAdd={() => addDynamicField("muscles")}
-        onRemove={removeField}
-      />
-
-      <DynamicSelects
-        label="Movement"
-        field="movement"
-        values={formData.movement}
-        options={exerciseOptions.movement}
-        onChange={handleDynamicChange}
-        onAdd={() => addDynamicField("movement")}
-        onRemove={removeField}
-      />
-
-      <DynamicSelects
-        label="Training Type"
-        field="trainingType"
-        values={formData.trainingType}
-        options={exerciseOptions.trainingType}
-        onChange={handleDynamicChange}
-        onAdd={() => addDynamicField("trainingType")}
-        onRemove={removeField}
-      />
-
-      <DynamicSelects
-        label="Category"
-        field="category"
-        values={formData.category}
-        options={exerciseOptions.category}
-        onChange={handleDynamicChange}
-        onAdd={() => addDynamicField("category")}
-        onRemove={removeField}
-      />
-
-      <div className="mb-4">
-        <label className="block font-semibold mb-2">Tags</label>
-        <div className="grid grid-cols-2 gap-2">
-          {exerciseOptions.tags.map((tag) => (
-            <label key={tag} className="flex items-center">
-              <input
-                type="checkbox"
-                name="tags"
-                value={tag}
-                checked={formData.tags.includes(tag)}
-                onChange={handleInputChange}
-                className="mr-2"
-              />
-              {tag}
-            </label>
-          ))}
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50"
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-4xl mx-auto bg-gray-900 p-6 rounded-lg shadow-md"
       >
-        {submitting ? "Submitting..." : "Add Exercise"}
-      </button>
-    </form>
+        {successMsg && <div className="text-green-500 mb-4">{successMsg}</div>}
+        {errorMsg && <div className="text-red-500 mb-4">{errorMsg}</div>}
+
+        <Input
+          label="Name"
+          name="name"
+          value={formData.name}
+          onChange={handleInputChange}
+          required
+        />
+
+        <div className="flex gap-4">
+          <div className="w-1/2">
+            <Input
+              label="Thumbnail URL"
+              name="thumbnail"
+              value={formData.thumbnail}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className="w-1/2">
+            <Input
+              label="Video URL"
+              name="video"
+              value={formData.video}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+        </div>
+
+        {thumbnailPreview && (
+          <div className="mb-4">
+            <label className="block font-medium mb-1">Image Preview</label>
+            <img
+              src={thumbnailPreview}
+              alt="Preview"
+              className="max-w-xs max-h-48 border rounded"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = "";
+              }}
+            />
+          </div>
+        )}
+
+        <Textarea
+          label="Instructions"
+          name="instruction"
+          value={formData.instruction}
+          onChange={handleInputChange}
+          required
+        />
+
+        <DynamicSelects
+          label="Muscles"
+          field="muscles"
+          values={formData.muscles}
+          options={muscles.map((m) => ({ value: m._id, label: m.name }))}
+          onChange={handleDynamicChange}
+          onAdd={() => addDynamicField("muscles")}
+          onRemove={removeField}
+        />
+
+        <div className="flex gap-4">
+          <div className="w-1/2">
+            <DynamicSelects
+              label="Equipment"
+              field="equipment"
+              values={formData.equipment}
+              options={exerciseOptions.equipment}
+              onChange={handleDynamicChange}
+              onAdd={() => addDynamicField("equipment")}
+              onRemove={removeField}
+            />
+          </div>
+          <div className="w-1/2">
+            <DynamicSelects
+              label="Movement"
+              field="movement"
+              values={formData.movement}
+              options={exerciseOptions.movement}
+              onChange={handleDynamicChange}
+              onAdd={() => addDynamicField("movement")}
+              onRemove={removeField}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          <div className="w-1/2">
+            <DynamicSelects
+              label="Training Type"
+              field="trainingType"
+              values={formData.trainingType}
+              options={exerciseOptions.trainingType}
+              onChange={handleDynamicChange}
+              onAdd={() => addDynamicField("trainingType")}
+              onRemove={removeField}
+            />
+          </div>
+          <div className="w-1/2">
+            <DynamicSelects
+              label="Category"
+              field="category"
+              values={formData.category}
+              options={exerciseOptions.category}
+              onChange={handleDynamicChange}
+              onAdd={() => addDynamicField("category")}
+              onRemove={removeField}
+            />
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Tags</label>
+          <div className="grid grid-cols-2 gap-2">
+            {exerciseOptions.tags.map((tag) => (
+              <label key={tag} className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="tags"
+                  value={tag}
+                  checked={formData.tags.includes(tag)}
+                  onChange={handleInputChange}
+                  className="mr-2"
+                />
+                {tag}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {submitting ? "Submitting..." : "Add Exercise"}
+        </button>
+      </form>
+    </div>
   );
 }
 
@@ -333,7 +354,7 @@ function Input({ label, name, value, onChange, required }) {
         value={value}
         onChange={onChange}
         required={required}
-        className="w-full border rounded px-3 py-2"
+        className="w-full border rounded px-3 py-2 text-black"
       />
     </div>
   );
@@ -348,7 +369,7 @@ function Textarea({ label, name, value, onChange, required }) {
         value={value}
         onChange={onChange}
         required={required}
-        className="w-full border rounded px-3 py-2"
+        className="w-full border rounded px-3 py-2 text-black"
         rows={3}
       />
     </div>
@@ -372,7 +393,7 @@ function DynamicSelects({
           <select
             value={val}
             onChange={(e) => onChange(idx, field, e.target.value)}
-            className="w-full border rounded px-3 py-2"
+            className="w-full border rounded px-3 py-2 text-black"
             required
           >
             <option value="">Select {label.toLowerCase()}</option>
@@ -403,7 +424,7 @@ function DynamicSelects({
       <button
         type="button"
         onClick={onAdd}
-        className="text-blue-600 text-sm hover:underline"
+        className="text-blue-400 text-sm hover:underline"
       >
         + Add Another {label}
       </button>

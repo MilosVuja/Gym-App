@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+body {
+  background-color: black;
+}
+
+
 .muscles:hover,
 .bones:hover,
 .organs:hover,

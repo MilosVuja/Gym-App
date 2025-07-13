@@ -25,7 +25,6 @@ const PersonalDetails = () => {
               <label>First name:</label>
               <input
                 type="text"
-                defaultValue="Milos"
                 className="bg-black border-b border-red-700 w-full focus:outline-none py-1"
               />
             </div>
@@ -33,7 +32,6 @@ const PersonalDetails = () => {
               <label>Last name:</label>
               <input
                 type="text"
-                defaultValue="Vujicic"
                 className="bg-black border-b border-red-700 w-full focus:outline-none py-1"
               />
             </div>
@@ -41,7 +39,6 @@ const PersonalDetails = () => {
               <label>Email:</label>
               <input
                 type="email"
-                defaultValue="miske-90@hotmail.com"
                 className="bg-black border-b border-red-700 w-full focus:outline-none py-1"
               />
             </div>
@@ -49,7 +46,6 @@ const PersonalDetails = () => {
               <label>Phone number:</label>
               <input
                 type="text"
-                defaultValue="0628480889"
                 className="bg-black border-b border-red-700 w-full focus:outline-none py-1"
               />
             </div>
@@ -60,7 +56,6 @@ const PersonalDetails = () => {
               <label>Address:</label>
               <input
                 type="text"
-                defaultValue="Gostivarska 1, Beograd"
                 className="bg-black border-b border-red-700 w-full focus:outline-none py-1"
               />
             </div>
