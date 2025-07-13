@@ -37,7 +37,7 @@ const exerciseSchema = new mongoose.Schema({
     ],
   }],
 
-  movement: {
+  movement: [{
     type: String,
     required: true,
     enum: [
@@ -66,9 +66,9 @@ const exerciseSchema = new mongoose.Schema({
       "Walking",
       "Cycling",
     ],
-  },
+  }],
 
-  trainingType: {
+  trainingType: [{
     type: String,
     required: true,
     enum: [
@@ -81,12 +81,12 @@ const exerciseSchema = new mongoose.Schema({
       "Endurance",
       "Power",
     ],
-  },
+  }],
 
   duration: { type: Number, required: false },
   caloriesBurned: { type: Number, required: false },
 
-  category: {
+  category: [{
     type: String,
     enum: [
       "Bodybuilding",
@@ -97,7 +97,7 @@ const exerciseSchema = new mongoose.Schema({
       "Rehabilitation",
     ],
     required: true,
-  },
+  }],
 
   repetitions: { type: Number, required: false },
   timePerSet: { type: Number, required: false },

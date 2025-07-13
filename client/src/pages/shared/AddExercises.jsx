@@ -61,7 +61,8 @@ export default function AddExercises() {
   const addDynamicField = (field) => {
     setFormData((prev) => {
       const values = prev[field];
-      if (values.includes("")) return prev;
+      if (values.includes("") || new Set(values).size !== values.length)
+        return prev;
       return {
         ...prev,
         [field]: [...values, ""],
@@ -77,6 +78,11 @@ export default function AddExercises() {
     });
   };
 
+  const hasDuplicates = (arr) => {
+    const cleaned = arr.filter(Boolean).map((v) => v.toLowerCase?.() || v);
+    return new Set(cleaned).size !== cleaned.length;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -84,6 +90,19 @@ export default function AddExercises() {
     setErrorMsg("");
 
     const filtered = (arr) => arr.filter((v) => v);
+
+    if (
+      hasDuplicates(formData.muscles) ||
+      hasDuplicates(formData.movement) ||
+      hasDuplicates(formData.category) ||
+      hasDuplicates(formData.trainingType) ||
+      hasDuplicates(formData.equipment) ||
+      hasDuplicates(formData.tags)
+    ) {
+      setErrorMsg("Duplicate values are not allowed in any field.");
+      setSubmitting(false);
+      return;
+    }
 
     if (filtered(formData.muscles).length === 0) {
       setErrorMsg("Please select at least one muscle.");
@@ -93,16 +112,16 @@ export default function AddExercises() {
 
     const payload = {
       ...formData,
-      equipment: JSON.stringify(filtered(formData.equipment)),
-      muscles: JSON.stringify(filtered(formData.muscles)),
-      movement: JSON.stringify(filtered(formData.movement)),
-      trainingType: JSON.stringify(filtered(formData.trainingType)),
-      category: JSON.stringify(filtered(formData.category)),
-      tags: JSON.stringify(formData.tags),
+      equipment: filtered(formData.equipment),
+      muscles: filtered(formData.muscles),
+      movement: filtered(formData.movement),
+      trainingType: filtered(formData.trainingType),
+      category: filtered(formData.category),
+      tags: formData.tags,
     };
 
     try {
-      const res = await fetch("/api/v1/exercises/add", {
+      const res = await fetch("http://localhost:3000/api/v1/exercises/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -160,7 +179,6 @@ export default function AddExercises() {
     "Foam Roller",
     "Other",
   ];
-
   const movementOptions = [
     "Push",
     "Pull",
@@ -187,7 +205,6 @@ export default function AddExercises() {
     "Walking",
     "Cycling",
   ];
-
   const trainingTypeOptions = [
     "Strength",
     "Cardio",
@@ -198,7 +215,6 @@ export default function AddExercises() {
     "Endurance",
     "Power",
   ];
-
   const categoryOptions = [
     "Bodybuilding",
     "CrossFit",
@@ -207,7 +223,6 @@ export default function AddExercises() {
     "Yoga",
     "Rehabilitation",
   ];
-
   const tagOptions = [
     "Fat Loss",
     "Muscle Gain",
@@ -279,7 +294,6 @@ export default function AddExercises() {
         onAdd={() => addDynamicField("equipment")}
         onRemove={removeField}
       />
-
       <DynamicSelects
         label="Muscles"
         field="muscles"
@@ -289,7 +303,6 @@ export default function AddExercises() {
         onAdd={() => addDynamicField("muscles")}
         onRemove={removeField}
       />
-
       <DynamicSelects
         label="Movement"
         field="movement"
@@ -299,7 +312,6 @@ export default function AddExercises() {
         onAdd={() => addDynamicField("movement")}
         onRemove={removeField}
       />
-
       <DynamicSelects
         label="Training Type"
         field="trainingType"
@@ -309,7 +321,6 @@ export default function AddExercises() {
         onAdd={() => addDynamicField("trainingType")}
         onRemove={removeField}
       />
-
       <DynamicSelects
         label="Category"
         field="category"
@@ -403,17 +414,17 @@ function DynamicSelects({
             required
           >
             <option value="">Select {label.toLowerCase()}</option>
-            {options.map((opt) =>
-              typeof opt === "string" ? (
-                <option key={opt} value={opt}>
-                  {opt}
+            {options.map((opt) => {
+              const value = typeof opt === "string" ? opt : opt.value;
+              const labelText = typeof opt === "string" ? opt : opt.label;
+              const isUsed = values.includes(value) && value !== val;
+
+              return (
+                <option key={value} value={value} disabled={isUsed}>
+                  {labelText}
                 </option>
-              ) : (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              )
-            )}
+              );
+            })}
           </select>
           {values.length > 1 && (
             <button

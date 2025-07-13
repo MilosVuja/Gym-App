@@ -104,22 +104,11 @@ exports.addExercise = [
       tags,
     } = req.body;
 
-    let musclesArray = [];
-    let equipmentArray = [];
-    let tagsArray = [];
+    const musclesArray = Array.isArray(muscles) ? muscles : [muscles].filter(Boolean);
+    const equipmentArray = Array.isArray(equipment) ? equipment : [equipment].filter(Boolean);
+    const tagsArray = Array.isArray(tags) ? tags : [tags].filter(Boolean);
 
-    try {
-      musclesArray = JSON.parse(muscles);
-      equipmentArray = equipment ? JSON.parse(equipment) : [];
-      tagsArray = tags ? JSON.parse(tags) : [];
-    } catch (err) {
-      return res.status(400).json({
-        message:
-          "Invalid format for muscles, equipment, or tags. Must be JSON arrays.",
-      });
-    }
-
-    if (!Array.isArray(musclesArray) || musclesArray.length === 0) {
+    if (musclesArray.length === 0) {
       return res.status(400).json({
         message: "At least one muscle must be selected.",
       });
@@ -155,3 +144,4 @@ exports.addExercise = [
     });
   }),
 ];
+
