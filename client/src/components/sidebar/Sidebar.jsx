@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   FaUser,
   FaRuler,
@@ -10,6 +11,7 @@ import {
   FaBars,
 } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
+import ProfilePicture from "../ProfilePicture";
 
 const menuItems = [
   { label: "Personal Details", icon: <FaUser />, section: "personal" },
@@ -24,6 +26,11 @@ const menuItems = [
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+
+  const isPersonalDetailsPage = location.pathname.includes(
+    "/members/profile/personal"
+  );
 
   return (
     <div
@@ -40,12 +47,12 @@ export default function Sidebar() {
         </button>
       </div>
 
-      <div className={`flex justify-center ${collapsed ? "hidden" : ""}`}>
-        <img
-          src="/path-to-profile-pic.jpg"
-          alt="Profile"
-          className="h-20 w-20 rounded-full mb-6"
-        />
+      <div
+        className={`flex justify-center ${collapsed ? "hidden" : ""} ${
+          isPersonalDetailsPage ? "invisible" : ""
+        }`}
+      >
+        <ProfilePicture className="w-20 h-20 rounded-full border-4 border-red-900 mb-4" />
       </div>
 
       <ul className="flex-1 list-none p-0">
