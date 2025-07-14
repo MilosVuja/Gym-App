@@ -7,9 +7,10 @@ const router = express.Router();
 // /members
 router.post("/login", authController.login);
 router.get("/logout", authController.logout);
+router.get("/me", authController.protect, memberController.getMe);
 
 router.patch(
-  "/updateMe",
+  "/update-me",
   authController.protect,
   memberController.uploadMemberPhoto,
   memberController.resizeMemberPhoto,

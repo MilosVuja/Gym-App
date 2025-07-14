@@ -45,6 +45,21 @@ exports.getAllMembers = catchAsync(async (req, res) => {
   });
 });
 
+exports.getMe = catchAsync(async (req, res, next) => {
+  const member = await Member.findById(req.member.id);
+
+  if (!member) {
+    return next(new AppError("Member not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      member,
+    },
+  });
+});
+
 exports.getMember = (req, res) => {
   res.status(500).json({
     status: "Error",
@@ -65,10 +80,10 @@ exports.updateMember = catchAsync(async (req, res, next) => {
     "firstName",
     "lastName",
     "email",
-    "photo",
+    "profilePicture",
     "phoneNumber",
     "address",
-    "sex",
+    "gender",
     "goal",
     "program",
     "height",
@@ -83,6 +98,11 @@ exports.updateMember = catchAsync(async (req, res, next) => {
     "bench",
     "deadlift"
   );
+
+  if (req.file) {
+    filteredBody.profilePicture = `images/members/profilePictures/${req.file.filename}`;
+
+  }
   const updatedMember = await Member.findByIdAndUpdate(
     req.member.id,
     filteredBody,
@@ -108,39 +128,53 @@ exports.deleteMember = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.uploadMemberPhoto = upload.single("photo");
+exports.uploadMemberPhoto = upload.single("profilePicture");
 
 exports.resizeMemberPhoto = catchAsync(async (req, res, next) => {
   if (!req.file) return next();
 
-  const uploadDir = "public/images/members";
+  const uploadDir = "public/uploads/images/members/profilePictures";
   if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
 
-  const currentMember = await Member.findById(req.member.id);
-  const oldPhotoPath = currentMember.photo;
+
+  const metadata = await sharp(req.file.buffer).metadata();
 
   req.file.filename = `member-${req.member.id}-${Date.now()}.jpeg`;
   const filePath = path.join(uploadDir, req.file.filename);
 
   try {
-    await sharp(req.file.buffer)
-      .rotate()
-      .resize(500, 500, {
-        fit: "cover",
-        position: "center",
-      })
-      .toFormat("jpeg")
-      .jpeg({ quality: 90 })
-      .toFile(filePath);
+    if (
+      metadata.width === 500 &&
+      metadata.height === 500 &&
+      metadata.format === "jpeg"
+    ) {
+
+      await sharp(req.file.buffer).toFile(filePath);
+    } else {
+
+      await sharp(req.file.buffer)
+        .rotate()
+        .resize(500, 500, {
+          fit: "cover",
+          position: "center",
+        })
+        .toFormat("jpeg")
+        .jpeg({ quality: 90 })
+        .toFile(filePath);
+    }
+
+    const currentMember = await Member.findById(req.member.id);
+    const oldPhotoPath = currentMember.profilePicture;
 
     if (oldPhotoPath && !oldPhotoPath.includes("default")) {
       const oldFilePath = path.join("public", oldPhotoPath);
       try {
         await unlink(oldFilePath);
+        console.log(`Old photo deleted: ${oldFilePath}`);
       } catch (err) {
-        console.log("Error deleting old photo:", err);
+        console.error(`Failed to delete old photo at ${oldFilePath}:`, err);
       }
     }
   } catch (error) {
@@ -167,7 +201,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     "email",
     "phoneNumber",
     "address",
-    "sex",
+    "gender",
     "goal",
     "program",
     "height",
@@ -181,11 +215,12 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     "squat",
     "bench",
     "deadlift",
-    "photo"
+    "profilePicture"
   );
 
   if (req.file) {
-    filteredBody.photo = `images/members/${req.file.filename}`;
+    filteredBody.profilePicture = `images/members/profilePictures/${req.file.filename}`;
+
   }
 
   const updatedMember = await Member.findByIdAndUpdate(

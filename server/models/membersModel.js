@@ -11,7 +11,7 @@ const MemberSchema = new mongoose.Schema(
     profilePicture: { type: String, default: "" },
     phoneNumber: { type: String },
     dateOfBirth: { type: Date },
-    gender: { type: String, enum: ["male", "female", "other"] },
+    gender: { type: String, enum: ["Male", "Female", "Other"] },
     address: {
       street: String,
       city: String,

@@ -17,6 +17,7 @@ const groupClassRouter = require("./routes/groupClassRoutes");
 const trainingPlanRouter = require("./routes/trainingPlan/trainingPlanRoutes");
 const musclesRouter = require("./routes/musclesRouter");
 const exercisesRouter = require("./routes/exercisesRoutes");
+const path = require("path");
 
 const app = express();
 
@@ -25,6 +26,9 @@ app.use(helmet({ contentSecurityPolicy: false }));
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
+
+app.use("/uploads/images/members/profilePictures", express.static(path.join(__dirname, "public/uploads/images/members/profilePictures")));
+
 
 const limiter = rateLimit({
   max: 100,
