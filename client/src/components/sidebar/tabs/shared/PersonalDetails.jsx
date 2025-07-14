@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import Cropper from "react-easy-crop";
 import { FaCamera } from "react-icons/fa";
 import getCroppedImg from "../../../../utilities/cropImage";
+import ProfilePicture from "../../../ProfilePicture";
 
 const PersonalDetails = () => {
   const defaultData = {
@@ -42,10 +43,7 @@ const PersonalDetails = () => {
           credentials: "include",
         });
 
-        console.log("Fetch /me status:", res.status);
-
         const data = await res.json();
-        console.log("Member data:", data);
 
         if (!res.ok) {
           throw new Error(data.message || "Failed to fetch member");
@@ -62,7 +60,12 @@ const PersonalDetails = () => {
           address: member.address || "",
           gender: member.gender || "",
           img: member.profilePicture
-            ? `http://localhost:3000/${member.profilePicture}`
+            ? member.profilePicture.startsWith("http")
+              ? member.profilePicture
+              : `http://localhost:3000/${member.profilePicture.replace(
+                  /^\/+/,
+                  ""
+                )}`
             : "/assets/profile.jpg",
         }));
       } catch (err) {
@@ -72,6 +75,22 @@ const PersonalDetails = () => {
 
     fetchMember();
   }, []);
+
+  const loadImageSrcFromUrl = async (url) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      console.error("Error loading image for cropper", err);
+      return null;
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -88,13 +107,11 @@ const PersonalDetails = () => {
     }
 
     try {
-
       const blob = await fetch(formData.img).then((res) => res.blob());
       const fullPhone = `+3816${formData.phone}`;
 
-
       const formDataToSend = new FormData();
-      formDataToSend.append("photo", blob, "profile.jpeg");
+      formDataToSend.append("profilePicture", blob, "profile.jpeg");
       formDataToSend.append("firstName", formData.firstName);
       formDataToSend.append("lastName", formData.lastName);
       formDataToSend.append("email", formData.email);
@@ -107,6 +124,7 @@ const PersonalDetails = () => {
         {
           method: "PATCH",
           body: formDataToSend,
+          credentials: "include",
         }
       );
 
@@ -117,7 +135,6 @@ const PersonalDetails = () => {
       }
 
       alert("Profile updated successfully!");
-      console.log(result.data.member);
     } catch (err) {
       console.error("Error updating profile:", err);
       alert("Something went wrong. Please try again.");
@@ -142,11 +159,17 @@ const PersonalDetails = () => {
     }
   };
 
-  const handleReCrop = () => {
-    if (imageSrc) {
-      setShowCropper(true);
+  const handleReCrop = async () => {
+    if (formData.img) {
+      const src = await loadImageSrcFromUrl(formData.img);
+      if (src) {
+        setImageSrc(src);
+        setShowCropper(true);
+      } else {
+        alert("Failed to load image for cropping");
+      }
     } else {
-      alert("No uploaded image to crop.");
+      alert("No uploaded picture to crop.");
     }
   };
 
@@ -172,7 +195,6 @@ const PersonalDetails = () => {
       <h1 className="text-4xl text-red-600 font-bold font-handwriting mb-8">
         Your Profile
       </h1>
-
 
       {showCropper && (
         <div
@@ -231,12 +253,10 @@ const PersonalDetails = () => {
         className="flex flex-col md:flex-row items-center gap-10"
       >
         <div className="relative cursor-pointer">
-          <img
+          <ProfilePicture
             src={formData.img}
-            alt="Profile"
             onClick={handleReCrop}
-            className="w-48 h-48 rounded-full object-cover border-4 border-red-900"
-            title="Click to recrop current profile picture"
+            className="w-60 h-60 border-4 border-red-900"
           />
           <input
             type="file"

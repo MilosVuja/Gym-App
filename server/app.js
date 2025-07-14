@@ -27,8 +27,13 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
-app.use("/uploads/images/members/profilePictures", express.static(path.join(__dirname, "public/uploads/images/members/profilePictures")));
+const corsOptions = {
+  origin: "http://localhost:5173",
+  credentials: true,
+};
 
+app.use(cors(corsOptions));
+app.use(express.static(path.join(__dirname, "public")));
 
 const limiter = rateLimit({
   max: 100,
@@ -45,13 +50,6 @@ app.use(mongoSanitize());
 app.use(
   hpp({
     whitelist: ["maxGroupSize", "ratingsAverage", "difficulty"],
-  })
-);
-
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
   })
 );
 

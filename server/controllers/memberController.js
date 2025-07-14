@@ -100,7 +100,10 @@ exports.updateMember = catchAsync(async (req, res, next) => {
   );
 
   if (req.file) {
-    filteredBody.profilePicture = `images/members/profilePictures/${req.file.filename}`;
+    if (req.file) {
+  filteredBody.profilePicture = `uploads/images/members/profilePictures/${req.file.filename}`;
+}
+
 
   }
   const updatedMember = await Member.findByIdAndUpdate(
@@ -138,7 +141,6 @@ exports.resizeMemberPhoto = catchAsync(async (req, res, next) => {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
 
-
   const metadata = await sharp(req.file.buffer).metadata();
 
   req.file.filename = `member-${req.member.id}-${Date.now()}.jpeg`;
@@ -150,10 +152,8 @@ exports.resizeMemberPhoto = catchAsync(async (req, res, next) => {
       metadata.height === 500 &&
       metadata.format === "jpeg"
     ) {
-
       await sharp(req.file.buffer).toFile(filePath);
     } else {
-
       await sharp(req.file.buffer)
         .rotate()
         .resize(500, 500, {
@@ -170,6 +170,7 @@ exports.resizeMemberPhoto = catchAsync(async (req, res, next) => {
 
     if (oldPhotoPath && !oldPhotoPath.includes("default")) {
       const oldFilePath = path.join("public", oldPhotoPath);
+      console.log("Attempting to delete old photo:", oldFilePath);
       try {
         await unlink(oldFilePath);
         console.log(`Old photo deleted: ${oldFilePath}`);
@@ -219,7 +220,9 @@ exports.updateMe = catchAsync(async (req, res, next) => {
   );
 
   if (req.file) {
-    filteredBody.profilePicture = `images/members/profilePictures/${req.file.filename}`;
+    if (req.file) {
+  filteredBody.profilePicture = `uploads/images/members/profilePictures/${req.file.filename}`;
+}
 
   }
 
