@@ -1,67 +1,89 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ConfirmModal from "../../../ConfirmModal";
 
 const GoalsTab = () => {
-  const [goals, setGoals] = useState([
-    {
-      id: 1,
-      title: "Lose 5kg",
-      type: "Weight",
-      deadline: "2025-07-01",
-      progress: 60,
-    },
-    {
-      id: 2,
-      title: "Run 5k in under 25 minutes",
-      type: "Cardio",
-      deadline: "2025-08-15",
-      progress: 30,
-    },
-  ]);
-
-  const [newGoal, setNewGoal] = useState({
-    title: "",
-    type: "",
-    deadline: "",
-  });
-
+  const [goals, setGoals] = useState([]);
+  const [newGoal, setNewGoal] = useState({ title: "", type: "", deadline: "" });
   const [editGoal, setEditGoal] = useState(null);
-
-  const [showConfirm, setShowConfirm] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const fetchGoals = async () => {
+    try {
+      const res = await fetch("http://localhost:3000/api/v1/goals", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch goals");
+      const data = await res.json();
+      setGoals(data);
+    } catch (err) {
+      console.error("Error fetching goals:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchGoals();
+  }, []);
+
+  const addGoal = async () => {
+    if (!newGoal.title || !newGoal.type || !newGoal.deadline) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://localhost:3000/api/v1/goals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(newGoal),
+      });
+      const data = await res.json();
+      setGoals([...goals, data]);
+      setNewGoal({ title: "", type: "", deadline: "" });
+    } catch (err) {
+      console.error("Error adding goal:", err);
+    }
+  };
+
+  const updateGoal = async () => {
+    try {
+      const res = await fetch(`http://localhost:3000/api/v1/goals/${editGoal._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(editGoal),
+      });
+
+      const updated = await res.json();
+      setGoals(goals.map((g) => (g._id === updated._id ? updated : g)));
+      setEditGoal(null);
+    } catch (err) {
+      console.error("Error updating goal:", err);
+    }
+  };
+
+  const deleteGoal = async (id) => {
+    try {
+      await fetch(`http://localhost:3000/api/v1/goals/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      setGoals(goals.filter((g) => g._id !== id));
+    } catch (err) {
+      console.error("Error deleting goal:", err);
+    }
+  };
 
   const handleInputChange = (e) => {
     setNewGoal({ ...newGoal, [e.target.name]: e.target.value });
   };
 
-  const addGoal = () => {
-    setGoals([
-      ...goals,
-      {
-        id: Date.now(),
-        ...newGoal,
-        progress: 0,
-      },
-    ]);
-    setNewGoal({ title: "", type: "", deadline: "" });
-  };
-
-  const deleteGoal = (id) => {
-    setGoals(goals.filter((goal) => goal.id !== id));
-  };
-
-  const updateGoal = () => {
-    setGoals(
-      goals.map((goal) =>
-        goal.id === editGoal.id ? editGoal : goal
-      )
-    );
-    setEditGoal(null);
-  };
-
   return (
     <div className="p-4 max-w-4xl mx-auto text-white">
       <h2 className="text-xl font-bold mb-4">Set a New Goal</h2>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <input
           type="text"
@@ -71,14 +93,17 @@ const GoalsTab = () => {
           value={newGoal.title}
           onChange={handleInputChange}
         />
-        <input
-          type="text"
+        <select
           name="type"
-          placeholder="Goal Type"
           className="border p-2 rounded text-black"
           value={newGoal.type}
           onChange={handleInputChange}
-        />
+        >
+          <option value="">Select Type</option>
+          <option value="Weight">Weight</option>
+          <option value="Cardio">Cardio</option>
+          <option value="Strength">Strength</option>
+        </select>
         <input
           type="date"
           name="deadline"
@@ -87,6 +112,7 @@ const GoalsTab = () => {
           onChange={handleInputChange}
         />
       </div>
+
       <button
         onClick={addGoal}
         className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
@@ -97,12 +123,15 @@ const GoalsTab = () => {
       <h2 className="text-xl font-bold mt-10 mb-4">Your Goals</h2>
       <div className="space-y-4">
         {goals.map((goal) => (
-          <div key={goal.id} className="border border-gray-700 p-4 rounded">
+          <div key={goal._id} className="border border-gray-700 p-4 rounded">
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-bold text-lg">{goal.title}</h3>
                 <p className="text-sm text-gray-400">Type: {goal.type}</p>
-                <p className="text-sm text-gray-400">Deadline: {goal.deadline}</p>
+                <p className="text-sm text-gray-400">
+                  Deadline: {new Date(goal.deadline).toLocaleDateString()}
+                </p>
+                <p className="text-sm text-gray-400">Status: {goal.status}</p>
               </div>
               <div className="space-x-2">
                 <button
@@ -113,7 +142,7 @@ const GoalsTab = () => {
                 </button>
                 <button
                   onClick={() => {
-                    setGoalToDelete(goal.id);
+                    setGoalToDelete(goal._id);
                     setShowConfirm(true);
                   }}
                   className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
@@ -144,20 +173,37 @@ const GoalsTab = () => {
                 setEditGoal({ ...editGoal, title: e.target.value })
               }
             />
-            <input
-              type="text"
+            <select
               className="border rounded p-2 mb-2 w-full"
               value={editGoal.type}
               onChange={(e) =>
                 setEditGoal({ ...editGoal, type: e.target.value })
               }
-            />
+            >
+              <option value="Weight">Weight</option>
+              <option value="Cardio">Cardio</option>
+              <option value="Strength">Strength</option>
+            </select>
             <input
               type="date"
-              className="border rounded p-2 mb-4 w-full"
-              value={editGoal.deadline}
+              className="border rounded p-2 mb-2 w-full"
+              value={editGoal.deadline.slice(0, 10)}
               onChange={(e) =>
                 setEditGoal({ ...editGoal, deadline: e.target.value })
+              }
+            />
+            <label className="text-sm">Progress: {editGoal.progress}%</label>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={editGoal.progress}
+              className="w-full mb-4"
+              onChange={(e) =>
+                setEditGoal({
+                  ...editGoal,
+                  progress: Number(e.target.value),
+                })
               }
             />
             <div className="flex justify-between">

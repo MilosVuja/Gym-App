@@ -1,4 +1,3 @@
-const { query } = require('express');
 const GroupClass = require('./../models/groupClassModel');
 const ApiFeatures = require('../utilities/apiFeatures');
 const catchAsync = require('../utilities/catchAsync');
