@@ -1,27 +1,26 @@
-const { default: mongoose } = require("mongoose");
+const mongoose = require("mongoose");
 
-const pictureSchema = new mongoose.Schema({
-  imageUrl: { type: String, required: true },
-  date: { type: Date, default: Date.now },
-  description: String,
-});
-
-const measurementSchema = new mongoose.Schema({
-  weight: { type: Number, min: 0 },
-  bodyFat: { type: Number, min: 0, max: 100 },
-  chest: { type: Number, min: 0 },
-  waist: { type: Number, min: 0 },
-  hips: { type: Number, min: 0 },
-  arms: { type: Number, min: 0 },
-  legs: { type: Number, min: 0 },
-  measurementPictures: [pictureSchema],
-  recordedAt: { type: Date, default: Date.now },
-  member: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Member",
-    required: true,
+const measurementsSchema = new mongoose.Schema(
+  {
+    member: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Member",
+      required: true,
+    },
+    date: {
+      type: Date,
+      default: Date.now,
+    },
+    weight: Number,
+    height: Number,
+    bmi: Number,
+    fat: Number,
+    waist: Number,
+    arm: Number,
+    thigh: Number,
   },
-});
+  { timestamps: true }
+);
 
-const Measurements = mongoose.model("Measurement", measurementSchema);
+const Measurements = mongoose.model("Measurements", measurementsSchema);
 module.exports = Measurements;

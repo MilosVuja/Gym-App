@@ -6,6 +6,7 @@ const mongoSanitize = require("express-mongo-sanitize");
 const hpp = require("hpp");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const path = require("path");
 
 const AppError = require("./utilities/appError");
 const globalErrorHandler = require("./controllers/errorController");
@@ -17,7 +18,8 @@ const groupClassRouter = require("./routes/groupClassRoutes");
 const trainingPlanRouter = require("./routes/trainingPlan/trainingPlanRoutes");
 const musclesRouter = require("./routes/musclesRouter");
 const exercisesRouter = require("./routes/exercisesRoutes");
-const path = require("path");
+const measurementsRouter = require("./routes/measurementsRoutes");
+
 
 const app = express();
 
@@ -60,6 +62,7 @@ app.use("/api/v1/group-class", groupClassRouter);
 app.use("/api/v1/training-plans", trainingPlanRouter);
 app.use("/api/v1/muscles", musclesRouter);
 app.use("/api/v1/exercises", exercisesRouter);
+app.use("/api/v1/measurements", measurementsRouter);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
