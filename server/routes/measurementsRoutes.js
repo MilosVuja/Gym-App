@@ -12,4 +12,8 @@ router
   .route("/add")
   .post(authController.protect, measurementsController.addMeasurement);
 
+router
+  .route("/:type")
+  .get(authController.protect, measurementsController.getMeasurementsByType);
+
 module.exports = router;

@@ -7,18 +7,39 @@ const goalSchema = new mongoose.Schema(
       ref: "Member",
       required: true,
     },
-    title: {
+    name: {
       type: String,
-      required: true,
+      required: [true, "Goal name is required"],
+      trim: true,
     },
     type: {
       type: String,
-      enum: ["Weight", "Cardio", "Strength"],
-      required: true,
+      enum: [
+        "weight",
+        "fat",
+        "waist",
+        "arm",
+        "leg",
+        "cardio",
+        "strength",
+        "height",
+        "bmi",
+      ],
+      required: [true, "Goal type is required"],
+      lowercase: true,
+      trim: true,
+    },
+    currentValue: {
+      type: Number,
+      default: null,
+    },
+    goalValue: {
+      type: Number,
+      required: [true, "Goal value is required"],
     },
     deadline: {
       type: Date,
-      required: true,
+      required: [true, "Deadline is required"],
     },
     progress: {
       type: Number,
@@ -29,11 +50,14 @@ const goalSchema = new mongoose.Schema(
     note: {
       type: String,
       default: "",
+      trim: true,
     },
     status: {
       type: String,
       enum: ["active", "completed", "expired"],
       default: "active",
+      lowercase: true,
+      trim: true,
     },
   },
   { timestamps: true }

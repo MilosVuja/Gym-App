@@ -17,3 +17,26 @@ exports.getMeasurements = catchAsync(async (req, res) => {
   );
   res.status(200).json({ success: true, data: measurements });
 });
+
+exports.getMeasurementsByType = catchAsync(async (req, res) => {
+  const memberId = req.member.id;
+  const type = req.params.type.toLowerCase();
+  const measurements = await Measurement.find({
+    member: memberId,
+    [type]: { $ne: null },
+  }).sort("date");
+
+  if (!measurements.length) {
+    return res.status(404).json({
+      error: "No measurement found for this type",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: measurements.map((m) => ({
+      date: m.date,
+      value: m[type],
+    })),
+  });
+});
