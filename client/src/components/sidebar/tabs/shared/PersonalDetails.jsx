@@ -3,6 +3,7 @@ import Cropper from "react-easy-crop";
 import { FaCamera } from "react-icons/fa";
 import getCroppedImg from "../../../../utilities/cropImage";
 import ProfilePicture from "../../../ProfilePicture";
+import { useProfilePicture } from "../../../../context/ProfilePictureContext.jsx";
 
 const PersonalDetails = () => {
   const defaultData = {
@@ -16,7 +17,7 @@ const PersonalDetails = () => {
   };
 
   const [formData, setFormData] = useState(defaultData);
-  const [imageSrc, setImageSrc] = useState(null);
+  const { imageSrc, setImageSrc } = useProfilePicture();
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
@@ -134,6 +135,13 @@ const PersonalDetails = () => {
         throw new Error(result.message || "Update failed");
       }
 
+      const newProfilePicUrl = result.data.member.profilePicture;
+      const fullUrl = newProfilePicUrl.startsWith("http")
+        ? newProfilePicUrl
+        : `http://localhost:3000/${newProfilePicUrl.replace(/^\/+/, "")}`;
+
+      setImageSrc(fullUrl);
+
       alert("Profile updated successfully!");
     } catch (err) {
       console.error("Error updating profile:", err);
@@ -181,6 +189,7 @@ const PersonalDetails = () => {
     try {
       const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
       setFormData((prev) => ({ ...prev, img: croppedImage }));
+      setImageSrc(croppedImage);
       setShowCropper(false);
 
       setZoom(1);
@@ -188,7 +197,7 @@ const PersonalDetails = () => {
     } catch (e) {
       console.error(e);
     }
-  }, [imageSrc, croppedAreaPixels]);
+  }, [imageSrc, croppedAreaPixels, setImageSrc]);
 
   return (
     <div className="text-white min-h-screen flex flex-col items-center px-6 py-10">
@@ -217,7 +226,6 @@ const PersonalDetails = () => {
             />
           </div>
 
-          {/* Zoom slider */}
           <div className="w-64 mt-4">
             <input
               type="range"
