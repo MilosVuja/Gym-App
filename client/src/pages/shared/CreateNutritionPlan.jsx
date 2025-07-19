@@ -504,7 +504,6 @@ export default function NutritionPlanner() {
         </button>
       </div>
 
-      {/* --- Step 2: Macros Display and Customize --- */}
       {recommendedMacros && (
         <div className="w-full space-y-6">
           <div className="flex w-full border rounded shadow-sm overflow-hidden">
@@ -608,7 +607,7 @@ export default function NutritionPlanner() {
             </div>
           </div>
 
-          <div className="border p-6 rounded space-y-6">
+          <div className="flex flex-col items-center border p-6 rounded space-y-6">
             <h3 className="text-xl font-semibold text-center mb-4">
               Assign Plan Period
             </h3>
@@ -655,7 +654,6 @@ export default function NutritionPlanner() {
                         </span>
                       </button>
 
-                      {/* Assigned Macros Card */}
                       {assignedPlanByDay[index] && (
                         <MacroCard
                           macros={assignedPlanByDay[index]}
@@ -667,7 +665,6 @@ export default function NutritionPlanner() {
                   ))}
                 </div>
 
-                {/* Show macros card below selected day */}
                 <MacroSelectionPanel
                   currentMacros={currentMacros}
                   adjustedMacros={adjustedDayMacros}
@@ -683,7 +680,7 @@ export default function NutritionPlanner() {
             )}
 
             {assignPeriod === "week" && (
-              <>
+              <div>
                 <div className="mb-4">
                   <label htmlFor="weekStartDate">Select Start of Week:</label>
                   <input
@@ -694,19 +691,19 @@ export default function NutritionPlanner() {
                     className="ml-2 px-2 py-1 border rounded"
                   />
                   {weekInfo && (
-                    <div className="mt-2 text-sm text-gray-700 font-medium">
+                    <div className="mt-2 text-sm text-center text-white-700 font-medium">
                       <p>📅 Selected Week: {weekInfo.range}</p>
                     </div>
                   )}
                 </div>
 
-            <MacroCard
-              title="Current Macros"
-              macros={currentMacros}
-              units={units}
-              className="flex flex-col items-center shadow text-center w-1/2 p-4 border rounded"
-            />
-              </>
+                <MacroCard
+                  title="Current Macros"
+                  macros={currentMacros}
+                  units={units}
+                  className="flex flex-col items-center shadow text-center p-4 border rounded"
+                />
+              </div>
             )}
 
             {assignPeriod === "month" && (
@@ -744,20 +741,31 @@ export default function NutritionPlanner() {
                   Plan Duration: {monthStartDate} –{" "}
                   {formatDateLong(getMonthEndDate())}
                 </div>
-
-
+                <MacroCard
+                  title="Current Macros"
+                  macros={currentMacros}
+                  units={units}
+                  className="flex flex-col items-center shadow text-center p-4 border rounded"
+                />
               </div>
             )}
             <div className="text-center">
-              {" "}
               <button
                 onClick={handleAssignPlan}
                 className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 items-center"
               >
-                Assign Plan
+                Assign Macros
               </button>
             </div>
           </div>
+            <div className="flex justify-end text-center">
+              <button
+                onClick={handleAssignPlan}
+                className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-end"
+              >
+                Go to meals
+              </button>
+            </div>
         </div>
       )}
     </div>
