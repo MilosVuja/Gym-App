@@ -18,6 +18,7 @@ const groupClassRouter = require("./routes/groupClassRoutes");
 const trainingPlanRouter = require("./routes/trainingPlan/trainingPlanRoutes");
 const musclesRouter = require("./routes/musclesRouter");
 const exercisesRouter = require("./routes/exercisesRoutes");
+const nutritionRouter = require("./routes/NutritionRoutes");
 
 
 const measurementsRouter = require("./routes/measurementsRoutes");
@@ -68,6 +69,7 @@ app.use("/api/v1/exercises", exercisesRouter);
 
 app.use("/api/v1/measurements", measurementsRouter);
 app.use("/api/v1/goals", goalsRouter);
+app.use("/api/v1/nutrition", nutritionRouter);
 
 
 

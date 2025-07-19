@@ -34,7 +34,7 @@ export default function Training() {
       <div className="text-center mt-10">
         <h2 className="text-xl font-semibold mb-4">No active training plan</h2>
         <Link
-          to="/create-training-plan"
+          to="/members/create-training-plan"
           className="bg-blue-600 text-white px-4 py-2 rounded"
         >
           Add Training Plan

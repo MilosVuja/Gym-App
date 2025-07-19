@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import ProfileLayout from "../layouts/ProfileLayout";
+
 import PersonalDetails from "../components/sidebar/tabs/shared/PersonalDetails";
 import Measurements from "../components/sidebar/tabs/shared/Measurements";
 import Training from "../components/sidebar/tabs/shared/Training";
@@ -8,8 +9,10 @@ import Goals from "../components/sidebar/tabs/shared/Goals";
 import Memberships from "../components/sidebar/tabs/shared/Memberships";
 import Nutrition from "../components/sidebar/tabs/shared/Nutrition";
 import Health from "../components/sidebar/tabs/shared/Health";
+
 import CreateTrainingPlan from "../pages/shared/MakeYourTraining";
 import AddExercises from "../pages/shared/AddExercises";
+import CreateNutritionPlan from "../pages/shared/CreateNutritionPlan";
 
 import AdminApproval from "../pages/admin/AdminApproval";
 import LoginPage from "../pages/auth/Login";
@@ -21,7 +24,7 @@ import RequireAdmin from "../components/auth/RequireAdmin";
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Public routes */}
+      {/* / */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<Register />} />
       <Route
@@ -29,7 +32,7 @@ export default function AppRoutes() {
         element={<Navigate to="/members/profile/personal" replace />}
       />
 
-      {/* Admin */}
+      {/* /admin */}
       <Route
         path="/admin"
         element={
@@ -43,9 +46,17 @@ export default function AppRoutes() {
         <Route path="approval" element={<AdminApproval />} />
       </Route>
 
-      {/* Member */}
-      <Route path="/members/profile" element={<RequireAuth />}>
-        <Route element={<ProfileLayout />}>
+      {/* Member routes with ProfileLayout */}
+      <Route
+        path="/members"
+        element={
+          <RequireAuth>
+            <ProfileLayout />
+          </RequireAuth>
+        }
+      >
+        {/* /profile/ tabs */}
+        <Route path="profile">
           <Route index element={<Navigate to="personal" replace />} />
           <Route path="personal" element={<PersonalDetails />} />
           <Route path="memberships" element={<Memberships />} />
@@ -56,16 +67,13 @@ export default function AppRoutes() {
           <Route path="goals" element={<Goals />} />
           <Route path="achievements" element={<Achievements />} />
         </Route>
+
+        {/* /members */}
+        <Route path="create-training-plan" element={<CreateTrainingPlan />} />
+        <Route path="create-nutrition-plan" element={<CreateNutritionPlan />} />
       </Route>
 
-      <Route
-        path="/create-training-plan"
-        element={
-          <RequireAuth>
-            <CreateTrainingPlan />
-          </RequireAuth>
-        }
-      />
+      {/* / sa autorizacijom */}
       <Route
         path="/add-exercises"
         element={
