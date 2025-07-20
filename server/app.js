@@ -18,7 +18,8 @@ const groupClassRouter = require("./routes/groupClassRoutes");
 const trainingPlanRouter = require("./routes/trainingPlan/trainingPlanRoutes");
 const musclesRouter = require("./routes/musclesRouter");
 const exercisesRouter = require("./routes/exercisesRoutes");
-const nutritionRouter = require("./routes/NutritionRoutes");
+const nutritionPlanRoutes = require("./routes/nutrition/nutritionPlanRoutes");
+const mealRoutes = require("./routes/nutrition/mealRoutes");
 
 
 const measurementsRouter = require("./routes/measurementsRoutes");
@@ -66,12 +67,11 @@ app.use("/api/v1/training-plans", trainingPlanRouter);
 app.use("/api/v1/muscles", musclesRouter);
 app.use("/api/v1/exercises", exercisesRouter);
 
-
 app.use("/api/v1/measurements", measurementsRouter);
 app.use("/api/v1/goals", goalsRouter);
-app.use("/api/v1/nutrition", nutritionRouter);
 
-
+app.use("/api/v1/nutrition-plans", nutritionPlanRoutes);
+app.use("/api/v1/meals", mealRoutes);
 
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));
