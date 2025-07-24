@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { LuNotebookText } from "react-icons/lu";
 
-export default function MealFooter() {
+export default function MealFooter({ ingredients }) {
   const [showNote, setShowNote] = useState(false);
   const [noteText, setNoteText] = useState("");
   const noteRef = useRef();
@@ -19,6 +19,13 @@ export default function MealFooter() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showNote]);
+
+  const totals = [0, 0, 0, 0];
+  ingredients.forEach((ing) => {
+    ing.values.forEach((val, idx) => {
+      totals[idx] += Number(val);
+    });
+  });
 
   return (
     <div className="flex justify-between border border-white-700 rounded pl-2">
@@ -47,10 +54,16 @@ export default function MealFooter() {
         </div>
       </div>
       <div className="flex items-center text-white text-center min-w-[180px] pr-1">
-        <p className="flex-1 min-w-[50px]">200</p>
-        <p className="flex-1 min-w-[50px] ml-8">50</p>
-        <p className="flex-1 min-w-[50px] ml-8">0</p>
-        <p className="flex-1 min-w-[50px] ml-7 mr-3">0</p>
+        {totals.map((total, idx) => (
+          <p
+            key={idx}
+            className={`flex-1 min-w-[50px] ${
+              idx === 1 || idx === 2 ? "ml-8" : idx === 3 ? "ml-7 mr-3" : ""
+            }`}
+          >
+            {total}
+          </p>
+        ))}
       </div>
     </div>
   );

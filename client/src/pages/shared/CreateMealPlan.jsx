@@ -115,9 +115,6 @@ export default function MealPlanner() {
             <p>g</p>
           </div>
         </div>
-
-        <MealBlock />
-        <MealBlock />
         <MealBlock />
         <MealBlock />
         <MealBlock />
