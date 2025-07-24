@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+html,
+body,
+#root,
+.ajde {
+  transform: none !important;
+  filter: none !important;
+  perspective: none !important;
+  contain: none !important;
+  will-change: auto !important;
+  overflow: visible !important;
+}
+
 body {
   background-color: black;
 }

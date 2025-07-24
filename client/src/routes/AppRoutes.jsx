@@ -13,6 +13,7 @@ import Health from "../components/sidebar/tabs/shared/Health";
 import CreateTrainingPlan from "../pages/shared/MakeYourTraining";
 import AddExercises from "../pages/shared/AddExercises";
 import CreateNutritionPlan from "../pages/shared/CreateNutritionPlan";
+import CreateMealPlan from "../pages/shared/CreateMealPlan";
 
 import AdminApproval from "../pages/admin/AdminApproval";
 import LoginPage from "../pages/auth/Login";
@@ -71,6 +72,7 @@ export default function AppRoutes() {
         {/* /members */}
         <Route path="create-training-plan" element={<CreateTrainingPlan />} />
         <Route path="create-nutrition-plan" element={<CreateNutritionPlan />} />
+        <Route path="meal-planner" element={<CreateMealPlan />} />
       </Route>
 
       {/* / sa autorizacijom */}

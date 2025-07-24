@@ -29,4 +29,10 @@ router.get(
   memberController.getTrainingProfile
 );
 
+router.get(
+  "/personal-info",
+  authController.protect,
+  memberController.getPersonalInfo
+);
+
 module.exports = router;

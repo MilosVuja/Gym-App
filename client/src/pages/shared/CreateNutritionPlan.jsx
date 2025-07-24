@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { saveNutritionPlan } from "../../api/nutritionApi";
+import dayjs from "dayjs";
+import axios from "axios";
 import MacroCard from "../../components/nutritionPlanner/MacroCard";
 import MacroSelectionPanel from "../../components/nutritionPlanner/MacroSelectionPanel";
 
 export default function NutritionPlanner() {
   const [personalInfo, setPersonalInfo] = useState({
-    gender: "male",
     weight: "",
     height: "",
-    age: "",
-    activity: "sedentary",
-    goal: "lose",
+    gender: "",
   });
 
   const units = {
@@ -38,20 +39,69 @@ export default function NutritionPlanner() {
     fat: 0,
   });
   const [selectedMacrosForDay, setSelectedMacrosForDay] = useState("current");
-  const [selectedMacrosForWeek, setSelectedMacrosForWeek] = useState("current");
-  const [monthStartDate, setMonthStartDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().slice(0, 10);
-  });
-  const [monthDuration, setMonthDuration] = useState(1);
-  const [selectedMacrosForMonth, setSelectedMacrosForMonth] =
+  const [periodStartDate, setPeriodStartDate] = useState(() =>
+    dayjs().format("YYYY-MM-DD")
+  );
+
+  const [periodAdjustments, setPeriodAdjustments] = useState({});
+  const [adjustedPeriodMacros, setAdjustedPeriodMacros] = useState(null);
+
+  const [periodEndDate, setPeriodEndDate] = useState(() =>
+    dayjs().add(1, "day").format("YYYY-MM-DD")
+  );
+
+  const [selectedMacrosForPeriod, setSelectedMacrosForPeriod] =
     useState("current");
 
   const [assignedPlanByDay, setAssignedPlanByDay] = useState({});
   const [, setAssignedPlan] = useState(null);
 
-  const [weekStartDate, setWeekStartDate] = useState("");
-  const [weekInfo, setWeekInfo] = useState(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!periodStartDate) return;
+
+    const minEnd = dayjs(periodStartDate).add(1, "day");
+    const currentEnd = dayjs(periodEndDate);
+
+    if (!periodEndDate || currentEnd.isBefore(minEnd)) {
+      setPeriodEndDate(minEnd.format("YYYY-MM-DD"));
+    }
+  }, [periodEndDate, periodStartDate]);
+
+  useEffect(() => {
+    const savedDraft = localStorage.getItem("nutritionPlanDraft");
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        if (parsed.personalInfo) setPersonalInfo(parsed.personalInfo);
+        if (parsed.recommendedMacros)
+          setRecommendedMacros(parsed.recommendedMacros);
+        if (parsed.appliedCustomMacros)
+          setAppliedCustomMacros(parsed.appliedCustomMacros);
+        if (parsed.customInput) setCustomInput(parsed.customInput);
+        if (parsed.assignPeriod) setAssignPeriod(parsed.assignPeriod);
+        if (parsed.weekDays) setWeekDays(parsed.weekDays);
+        if (typeof parsed.selectedDayIndex === "number")
+          setSelectedDayIndex(parsed.selectedDayIndex);
+        if (parsed.dayAdjustments) setDayAdjustments(parsed.dayAdjustments);
+        if (parsed.selectedMacrosForDay)
+          setSelectedMacrosForDay(parsed.selectedMacrosForDay);
+        if (parsed.periodStartDate) setPeriodStartDate(parsed.periodStartDate);
+        if (parsed.periodAdjustments)
+          setPeriodAdjustments(parsed.periodAdjustments);
+        if (parsed.adjustedPeriodMacros)
+          setAdjustedPeriodMacros(parsed.adjustedPeriodMacros);
+        if (parsed.periodEndDate) setPeriodEndDate(parsed.periodEndDate);
+        if (parsed.selectedMacrosForPeriod)
+          setSelectedMacrosForPeriod(parsed.selectedMacrosForPeriod);
+        if (parsed.assignedPlanByDay)
+          setAssignedPlanByDay(parsed.assignedPlanByDay);
+      } catch (e) {
+        console.warn("Failed to parse saved nutrition plan draft:", e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const daysFull = [
@@ -83,13 +133,87 @@ export default function NutritionPlanner() {
     }));
 
     setWeekDays(combined);
-    setSelectedDayIndex(0);
   }, []);
+
+  useEffect(() => {
+    if (!periodStartDate) return;
+
+    const minEnd = dayjs(periodStartDate).add(1, "day");
+    const currentEnd = dayjs(periodEndDate);
+
+    if (!periodEndDate || currentEnd.isBefore(minEnd)) {
+      setPeriodEndDate(minEnd.format("YYYY-MM-DD"));
+    }
+  }, [periodEndDate, periodStartDate]);
+
+  useEffect(() => {
+    const planData = {
+      personalInfo,
+      recommendedMacros,
+      appliedCustomMacros,
+      customInput,
+      assignPeriod,
+      weekDays,
+      selectedDayIndex,
+      dayAdjustments,
+      selectedMacrosForDay,
+      periodStartDate,
+      periodAdjustments,
+      adjustedPeriodMacros,
+      periodEndDate,
+      selectedMacrosForPeriod,
+      assignedPlanByDay,
+    };
+
+    localStorage.setItem("nutritionPlanDraft", JSON.stringify(planData));
+  }, [
+    personalInfo,
+    recommendedMacros,
+    appliedCustomMacros,
+    customInput,
+    assignPeriod,
+    weekDays,
+    selectedDayIndex,
+    dayAdjustments,
+    selectedMacrosForDay,
+    periodStartDate,
+    periodAdjustments,
+    adjustedPeriodMacros,
+    periodEndDate,
+    selectedMacrosForPeriod,
+    assignedPlanByDay,
+  ]);
 
   const handleChange = (e) => {
     setPersonalInfo({ ...personalInfo, [e.target.name]: e.target.value });
     setErrors((prev) => ({ ...prev, [e.target.name]: null }));
   };
+
+  useEffect(() => {
+    const fetchPersonalInfo = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:3000/api/v1/members/personal-info",
+          {
+            withCredentials: true,
+          }
+        );
+
+        const personalData = res.data?.data || {};
+
+        setPersonalInfo({
+          height: personalData.height ?? "",
+          weight: personalData.weight ?? "",
+          gender: personalData.gender ?? "",
+        });
+      } catch (error) {
+        console.error("Failed to fetch personal info", error);
+        setPersonalInfo({ height: "", weight: "", gender: "" });
+      }
+    };
+
+    fetchPersonalInfo();
+  }, []);
 
   const handleCustomChange = (e) => {
     setCustomInput({ ...customInput, [e.target.name]: e.target.value });
@@ -99,31 +223,22 @@ export default function NutritionPlanner() {
   const handleAssignPeriodChange = (e) => {
     setAssignPeriod(e.target.value);
     setSelectedMacrosForDay("current");
-    setSelectedMacrosForWeek("current");
-    setSelectedMacrosForMonth("current");
+    setSelectedMacrosForPeriod("current");
   };
 
-  const handleDayAdjustmentChange = (macro, delta) => {
-    setDayAdjustments((prev) => {
-      const newValue = (prev[macro] || 0) + delta;
-      return { ...prev, [macro]: newValue };
-    });
+  const handleDayAdjustmentChange = (macro, value) => {
+    setDayAdjustments((prev) => ({
+      ...prev,
+      [macro]: value,
+    }));
   };
 
   const handleSelectedMacrosForDay = (e) =>
     setSelectedMacrosForDay(e.target.value);
-  // const handleSelectedMacrosForWeek = (e) =>
-  //   setSelectedMacrosForWeek(e.target.value);
-  // const handleSelectedMacrosForMonth = (e) =>
-  //   setSelectedMacrosForMonth(e.target.value);
+  const handleSelectedMacrosForPeriod = (e) =>
+    setSelectedMacrosForPeriod(e.target.value);
 
   const handleDaySelect = (index) => setSelectedDayIndex(index);
-  const handleMonthStartDateChange = (e) => setMonthStartDate(e.target.value);
-
-  const handleMonthDurationChange = (e) => {
-    const val = parseInt(e.target.value, 10);
-    if (val >= 1 && val <= 3) setMonthDuration(val);
-  };
 
   const validatePersonalInfo = () => {
     const newErrors = {};
@@ -175,13 +290,17 @@ export default function NutritionPlanner() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const formatDateLong = (date) =>
-    date.toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      weekday: "long",
-    });
+  const formatDateLong = (date) => {
+    if (!date) return "";
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d)) return "";
+
+    const day = d.getDate().toString().padStart(2, "0");
+    const month = (d.getMonth() + 1).toString().padStart(2, "0");
+    const year = d.getFullYear();
+
+    return `${day}.${month}.${year}.`;
+  };
 
   const getAdjustedDayMacros = () => {
     const baseMacros = appliedCustomMacros ?? recommendedMacros;
@@ -209,13 +328,46 @@ export default function NutritionPlanner() {
     };
   };
 
-  const getMonthEndDate = () => {
-    const start = new Date(monthStartDate);
-    const end = new Date(start);
-    end.setMonth(end.getMonth() + monthDuration);
-    end.setDate(end.getDate() - 1);
-    return end;
+  const handlePeriodAdjustmentChange = (macro, value) => {
+    setPeriodAdjustments((prev) => ({
+      ...prev,
+      [macro]: value,
+    }));
   };
+
+  useEffect(() => {
+    if (!recommendedMacros || !selectedMacrosForPeriod) {
+      setAdjustedPeriodMacros(null);
+      return;
+    }
+
+    const baseMacros = appliedCustomMacros ?? recommendedMacros;
+
+    if (selectedMacrosForPeriod === "current") {
+      setAdjustedPeriodMacros(baseMacros);
+      return;
+    }
+
+    if (selectedMacrosForPeriod === "adjusted") {
+      const adjusted = { ...baseMacros };
+      ["protein", "carbs", "fat"].forEach((macro) => {
+        const adjustment = periodAdjustments[macro] || 0;
+        adjusted[macro] = Math.max(0, adjusted[macro] + adjustment);
+      });
+      adjusted.calories =
+        adjusted.protein * 4 + adjusted.carbs * 4 + adjusted.fat * 9;
+
+      setAdjustedPeriodMacros(adjusted);
+      return;
+    }
+
+    setAdjustedPeriodMacros(null);
+  }, [
+    periodAdjustments,
+    selectedMacrosForPeriod,
+    recommendedMacros,
+    appliedCustomMacros,
+  ]);
 
   const adjustedDayMacros = formatMacros(getAdjustedDayMacros());
 
@@ -284,80 +436,89 @@ export default function NutritionPlanner() {
     });
   }
 
-  const handleAssignPlan = () => {
-    let planDetails;
+  const handleAssignPlan = async () => {
+    let baseMacros;
+    let payload = {};
 
     if (assignPeriod === "day") {
-      const baseMacros =
+      baseMacros =
         selectedMacrosForDay === "current"
           ? appliedCustomMacros ?? recommendedMacros
           : adjustedDayMacros;
 
-      planDetails = {
+      const selectedDateObj = weekDays[selectedDayIndex]?.date;
+      if (!selectedDateObj || !baseMacros) return;
+
+      const selectedDate = dayjs(selectedDateObj).format("YYYY-MM-DD");
+
+      setAssignedPlanByDay((prev) => ({
+        ...prev,
+        [selectedDayIndex]: baseMacros,
+      }));
+
+      payload = {
+        date: selectedDate,
         period: "day",
-        dayIndex: selectedDayIndex,
         macros: baseMacros,
       };
-
-      if (baseMacros) {
-        setAssignedPlanByDay((prev) => ({
-          ...prev,
-          [selectedDayIndex]: baseMacros,
-        }));
-      }
-    } else if (assignPeriod === "week") {
-      const baseMacros =
-        selectedMacrosForWeek === "current"
+    } else if (assignPeriod === "period") {
+      baseMacros =
+        selectedMacrosForPeriod === "current"
           ? appliedCustomMacros ?? recommendedMacros
           : recommendedMacros;
 
-      planDetails = {
-        period: "week",
-        macros: baseMacros,
-      };
-    } else if (assignPeriod === "month") {
-      const baseMacros =
-        selectedMacrosForMonth === "current"
-          ? appliedCustomMacros ?? recommendedMacros
-          : recommendedMacros;
+      if (!baseMacros || !periodStartDate || !periodEndDate) return;
 
-      planDetails = {
-        period: "month",
-        startDate: monthStartDate,
-        duration: monthDuration,
+      payload = {
+        startDate: periodStartDate,
+        endDate: periodEndDate,
+        period: "custom",
         macros: baseMacros,
       };
     }
 
-    setAssignedPlan(planDetails);
-  };
-
-  const handleWeekStartChange = (dateString) => {
-    setWeekStartDate(dateString);
-    if (dateString) {
-      const start = new Date(dateString);
-      const end = new Date(start);
-      end.setDate(start.getDate() + 6);
-
-      const formattedRange = `${formatDate(start)} – ${formatDate(end)}`;
-      setWeekInfo({ range: formattedRange });
-    } else {
-      setWeekInfo(null);
+    try {
+      console.log("Sending payload: ", payload);
+      await saveNutritionPlan(payload);
+      setAssignedPlan({ ...payload });
+    } catch (err) {
+      console.error("Error saving plan:", err);
     }
   };
 
-  const formatDate = (date) =>
-    date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
+  const saveToLocalStorage = () => {
+    const planData = {
+      personalInfo,
+      recommendedMacros,
+      appliedCustomMacros,
+      customInput,
+      assignPeriod,
+      assignedPlanByDay,
+      selectedDayIndex,
+      dayAdjustments,
+      selectedMacrosForDay,
+      selectedMacrosForPeriod,
+      adjustedPeriodMacros,
+      periodStartDate,
+      periodEndDate,
+      periodAdjustments,
+    };
+
+    localStorage.setItem("nutritionPlanDraft", JSON.stringify(planData));
+    alert("Nutrition plan draft saved locally!");
+  };
+
+  const handleSaveAndNavigate = () => {
+    saveToLocalStorage();
+    navigate("/members/meal-planner");
+  };
 
   return (
     <div className="p-6 max-w-5xl mx-auto border rounded-xl shadow-md space-y-6">
       <h2 className="text-2xl font-bold text-center">Nutrition Calculator</h2>
 
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Step 1: Personal Info</h3>
+        <h3 className="text-lg font-semibold">Personal Info</h3>
 
         <div className="flex gap-4">
           <label>
@@ -388,13 +549,32 @@ export default function NutritionPlanner() {
             <input
               type="number"
               name="height"
-              value={personalInfo.height}
-              onChange={handleChange}
+              value={personalInfo.height || ""}
+              onChange={(e) =>
+                setPersonalInfo({ ...personalInfo, height: e.target.value })
+              }
+              onBlur={(e) => {
+                const value = e.target.value;
+                if (!value) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    height: "Height is required",
+                  }));
+                } else if (value < 100 || value > 250) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    height: "Height must be between 100–250",
+                  }));
+                } else {
+                  setErrors((prev) => {
+                    const { ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
               className={`border p-1 rounded ${
                 errors.height ? "border-red-500" : ""
               }`}
-              min="100"
-              max="250"
             />
             {errors.height && (
               <span className="text-xs text-red-600 mt-1">{errors.height}</span>
@@ -404,14 +584,33 @@ export default function NutritionPlanner() {
             Weight (kg)
             <input
               type="number"
-              name="weight"
-              value={personalInfo.weight}
-              onChange={handleChange}
+              name="Weight"
+              value={personalInfo.weight || ""}
+              onChange={(e) =>
+                setPersonalInfo({ ...personalInfo, weight: e.target.value })
+              }
+              onBlur={(e) => {
+                const value = e.target.value;
+                if (!value) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    weight: "Weight is required",
+                  }));
+                } else if (value < 20 || value > 200) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    weight: "Weight must be between 20–200",
+                  }));
+                } else {
+                  setErrors((prev) => {
+                    const { ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
               className={`border p-1 rounded ${
                 errors.weight ? "border-red-500" : ""
               }`}
-              min="20"
-              max="500"
             />
             {errors.weight && (
               <span className="text-xs text-red-600 mt-1">{errors.weight}</span>
@@ -423,13 +622,29 @@ export default function NutritionPlanner() {
             <input
               type="number"
               name="age"
-              value={personalInfo.age}
-              onChange={handleChange}
+              value={personalInfo.age || ""}
+              onChange={(e) =>
+                setPersonalInfo({ ...personalInfo, age: e.target.value })
+              }
+              onBlur={(e) => {
+                const value = e.target.value;
+                if (!value) {
+                  setErrors((prev) => ({ ...prev, age: "Age is required" }));
+                } else if (value < 10 || value > 120) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    age: "Age must be between 10–120",
+                  }));
+                } else {
+                  setErrors((prev) => {
+                    const { ...rest } = prev;
+                    return rest;
+                  });
+                }
+              }}
               className={`border p-1 rounded ${
                 errors.age ? "border-red-500" : ""
               }`}
-              min="10"
-              max="120"
             />
             {errors.age && (
               <span className="text-xs text-red-600 mt-1">{errors.age}</span>
@@ -494,8 +709,7 @@ export default function NutritionPlanner() {
               setDayAdjustments({ protein: 0, fat: 0, carbs: 0 });
               setAppliedCustomMacros(null);
               setSelectedMacrosForDay("current");
-              setSelectedMacrosForWeek("current");
-              setSelectedMacrosForMonth("current");
+              setSelectedMacrosForPeriod("current");
               calculateMacros();
             }
           }}
@@ -613,7 +827,7 @@ export default function NutritionPlanner() {
             </h3>
 
             <div className="flex justify-center gap-8 mb-6">
-              {["day", "week", "month"].map((period) => (
+              {["day", "period"].map((period) => (
                 <label key={period} className="cursor-pointer">
                   <input
                     type="radio"
@@ -624,11 +838,7 @@ export default function NutritionPlanner() {
                     className="mr-1"
                   />
                   <span className="capitalize">
-                    {period === "day"
-                      ? "By Day"
-                      : period === "week"
-                      ? "By Week"
-                      : "By Month(s)"}
+                    {period === "day" ? "By Day" : "By Custom Period"}
                   </span>
                 </label>
               ))}
@@ -666,6 +876,7 @@ export default function NutritionPlanner() {
                 </div>
 
                 <MacroSelectionPanel
+                  mode="day"
                   currentMacros={currentMacros}
                   adjustedMacros={adjustedDayMacros}
                   dayAdjustments={dayAdjustments}
@@ -679,76 +890,57 @@ export default function NutritionPlanner() {
               </div>
             )}
 
-            {assignPeriod === "week" && (
-              <div>
-                <div className="mb-4">
-                  <label htmlFor="weekStartDate">Select Start of Week:</label>
-                  <input
-                    type="date"
-                    id="weekStartDate"
-                    value={weekStartDate}
-                    onChange={(e) => handleWeekStartChange(e.target.value)}
-                    className="ml-2 px-2 py-1 border rounded"
-                  />
-                  {weekInfo && (
-                    <div className="mt-2 text-sm text-center text-white-700 font-medium">
-                      <p>📅 Selected Week: {weekInfo.range}</p>
-                    </div>
-                  )}
-                </div>
-
-                <MacroCard
-                  title="Current Macros"
-                  macros={currentMacros}
-                  units={units}
-                  className="flex flex-col items-center shadow text-center p-4 border rounded"
-                />
-              </div>
-            )}
-
-            {assignPeriod === "month" && (
+            {assignPeriod === "period" && (
               <div className="max-w-lg mx-auto space-y-4">
-                <div className="flex flex-col items-center gap-2">
-                  <label htmlFor="monthStartDate" className="font-semibold">
-                    Select Start Date:
+                <div className="flex justify-center gap-6 items-center">
+                  <label className="cursor-pointer flex flex-col items-center">
+                    Start Date
+                    <input
+                      type="date"
+                      name="periodStart"
+                      value={periodStartDate}
+                      onChange={(e) => setPeriodStartDate(e.target.value)}
+                      className="border rounded p-1"
+                    />
                   </label>
-                  <input
-                    type="date"
-                    id="monthStartDate"
-                    value={monthStartDate}
-                    onChange={handleMonthStartDateChange}
-                    className="border rounded p-1 text-center"
-                  />
-                </div>
 
-                <div className="flex justify-center gap-6">
-                  {[1, 2, 3].map((num) => (
-                    <label key={num} className="cursor-pointer">
-                      <input
-                        type="radio"
-                        name="monthDuration"
-                        value={num}
-                        checked={monthDuration === num}
-                        onChange={handleMonthDurationChange}
-                        className="mr-1"
-                      />
-                      {num} {num === 1 ? "Month" : "Months"}
-                    </label>
-                  ))}
+                  <label className="cursor-pointer flex flex-col items-center">
+                    End Date
+                    <input
+                      type="date"
+                      name="periodEnd"
+                      value={periodEndDate}
+                      onChange={(e) => {
+                        if (
+                          new Date(e.target.value) >= new Date(periodStartDate)
+                        ) {
+                          setPeriodEndDate(e.target.value);
+                        }
+                      }}
+                      className="border rounded p-1"
+                    />
+                  </label>
                 </div>
 
                 <div className="text-center font-semibold">
-                  Plan Duration: {monthStartDate} –{" "}
-                  {formatDateLong(getMonthEndDate())}
+                  Plan Duration: {formatDateLong(periodStartDate)} –{" "}
+                  {formatDateLong(periodEndDate)}
                 </div>
-                <MacroCard
-                  title="Current Macros"
-                  macros={currentMacros}
+                <MacroSelectionPanel
+                  mode="period"
+                  currentMacros={currentMacros}
+                  adjustedMacros={adjustedPeriodMacros}
+                  periodAdjustments={periodAdjustments}
+                  setPeriodAdjustments={setPeriodAdjustments}
+                  selectedMacros={selectedMacrosForPeriod}
+                  handleSelectedMacrosChange={handleSelectedMacrosForPeriod}
+                  handlePeriodAdjustmentChange={handlePeriodAdjustmentChange}
                   units={units}
-                  className="flex flex-col items-center shadow text-center p-4 border rounded"
+                  formatMacros={formatMacros}
                 />
               </div>
             )}
+
             <div className="text-center">
               <button
                 onClick={handleAssignPlan}
@@ -758,14 +950,14 @@ export default function NutritionPlanner() {
               </button>
             </div>
           </div>
-            <div className="flex justify-end text-center">
-              <button
-                onClick={handleAssignPlan}
-                className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-end"
-              >
-                Go to meals
-              </button>
-            </div>
+          <div className="flex justify-end text-center">
+            <button
+              onClick={handleSaveAndNavigate}
+              className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-end"
+            >
+              Go to meals
+            </button>
+          </div>
         </div>
       )}
     </div>

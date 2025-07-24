@@ -21,7 +21,6 @@ const exercisesRouter = require("./routes/exercisesRoutes");
 const nutritionPlanRoutes = require("./routes/nutrition/nutritionPlanRoutes");
 const mealRoutes = require("./routes/nutrition/mealRoutes");
 
-
 const measurementsRouter = require("./routes/measurementsRoutes");
 const goalsRouter = require("./routes/goalsRoutes");
 
@@ -42,7 +41,7 @@ app.use(cors(corsOptions));
 app.use(express.static(path.join(__dirname, "public")));
 
 const limiter = rateLimit({
-  max: 100,
+  max: 1000,
   windowMs: 60 * 60 * 1000,
   message: "Too many requests from this IP! Please try again in an hour!",
 });

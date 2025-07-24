@@ -1,4 +1,5 @@
 const Member = require("./../models/membersModel");
+const Measurements = require("./../models/MeasurementsModel");
 const catchAsync = require("../utilities/catchAsync");
 const AppError = require("../utilities/appError");
 const multer = require("multer");
@@ -60,19 +61,15 @@ exports.getMe = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getMember = (req, res) => {
-  res.status(500).json({
-    status: "Error",
-    message: "This route isnt yet defined",
+exports.createMember = catchAsync(async (req, res, next) => {
+  const newMember = await Member.create(req.body);
+  res.status(201).json({
+    status: "success",
+    data: {
+      member: newMember,
+    },
   });
-};
-
-exports.createMember = (req, res) => {
-  res.status(500).json({
-    status: "Error",
-    message: "This route isnt yet defined",
-  });
-};
+});
 
 exports.updateMember = catchAsync(async (req, res, next) => {
   const filteredBody = filterObj(
@@ -101,10 +98,8 @@ exports.updateMember = catchAsync(async (req, res, next) => {
 
   if (req.file) {
     if (req.file) {
-  filteredBody.profilePicture = `uploads/images/members/profilePictures/${req.file.filename}`;
-}
-
-
+      filteredBody.profilePicture = `uploads/images/members/profilePictures/${req.file.filename}`;
+    }
   }
   const updatedMember = await Member.findByIdAndUpdate(
     req.member.id,
@@ -221,9 +216,8 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 
   if (req.file) {
     if (req.file) {
-  filteredBody.profilePicture = `uploads/images/members/profilePictures/${req.file.filename}`;
-}
-
+      filteredBody.profilePicture = `uploads/images/members/profilePictures/${req.file.filename}`;
+    }
   }
 
   const updatedMember = await Member.findByIdAndUpdate(
@@ -340,3 +334,40 @@ exports.getTrainingProfile = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+exports.getPersonalInfo = catchAsync(async (req, res, next) => {
+  const memberId = req.member.id;
+
+
+  const member = await Member.findById(memberId).select("gender");
+  if (!member) {
+    return res.status(404).json({ message: "Member not found." });
+  }
+
+  const latestMeasurement = await Measurements.findOne({
+    member: memberId,
+    $or: [
+      { height: { $exists: true, $ne: null } },
+      { weight: { $exists: true, $ne: null } },
+    ],
+  })
+    .sort({ date: -1 })
+    .select("height weight");
+
+  if (!latestMeasurement) {
+    return res.status(404).json({ message: "No measurements found." });
+  }
+
+  console.log("Found measurement:", latestMeasurement);
+  console.log("Member gender:", member.gender);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      height: latestMeasurement.height,
+      weight: latestMeasurement.weight,
+      gender: member.gender,
+    },
+  });
+});
+

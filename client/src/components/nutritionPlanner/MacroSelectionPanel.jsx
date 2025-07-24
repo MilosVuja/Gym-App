@@ -2,16 +2,36 @@ import MacroCard from "./MacroCard";
 import MacroAdjuster from "./MacroAdjuster";
 
 export default function MacroSelectionPanel({
+  mode = "day",
+
+  currentMacros,
   adjustedMacros,
+
   dayAdjustments,
+  periodAdjustments,
+
   setDayAdjustments,
+  setPeriodAdjustments,
+
   selectedMacros,
   handleSelectedMacrosChange,
+
   handleDayAdjustmentChange,
+  handlePeriodAdjustmentChange,
+
   units,
-  currentMacros,
   formatMacros,
 }) {
+
+  const adjustments = mode === "day" ? dayAdjustments : periodAdjustments;
+  const setAdjustments =
+    mode === "day" ? setDayAdjustments : setPeriodAdjustments;
+  const onIncrement =
+    mode === "day" ? handleDayAdjustmentChange : handlePeriodAdjustmentChange;
+  const onDecrement = (macro) =>
+    onIncrement(macro, (adjustments[macro] || 0) - 1);
+  const radioName = mode === "day" ? "macrosForDay" : "macrosForPeriod";
+
   return (
     <>
       <div className="flex justify-center gap-6 mb-4">
@@ -38,21 +58,23 @@ export default function MacroSelectionPanel({
           <MacroAdjuster
             key={macro}
             macro={macro}
-            value={dayAdjustments[macro]}
+            value={adjustments[macro] || 0}
             onChange={(m, val) =>
-              setDayAdjustments((prev) => ({ ...prev, [m]: val }))
+              setAdjustments((prev) => ({ ...prev, [m]: val }))
             }
-            onIncrement={(m) => handleDayAdjustmentChange(m, 1)}
-            onDecrement={(m) => handleDayAdjustmentChange(m, -1)}
+            onIncrement={() =>
+              onIncrement(macro, (adjustments[macro] || 0) + 1)
+            }
+            onDecrement={() => onDecrement(macro)}
           />
         ))}
       </div>
-      
+
       <div className="flex justify-center gap-8">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="radio"
-            name="macrosForDay"
+            name={radioName}
             value="current"
             checked={selectedMacros === "current"}
             onChange={handleSelectedMacrosChange}
@@ -62,7 +84,7 @@ export default function MacroSelectionPanel({
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="radio"
-            name="macrosForDay"
+            name={radioName}
             value="adjusted"
             checked={selectedMacros === "adjusted"}
             onChange={handleSelectedMacrosChange}
