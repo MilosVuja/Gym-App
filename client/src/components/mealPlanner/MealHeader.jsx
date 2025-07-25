@@ -2,7 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { FaEdit, FaTrashAlt } from "react-icons/fa";
 import { BsThreeDots } from "react-icons/bs";
 
-export default function MealHeader({ mealName: initialName, mealTime: initialTime, onDelete }) {
+export default function MealHeader({
+  mealName: initialName,
+  mealTime: initialTime,
+  onDelete,
+}) {
   const [mealName, setMealName] = useState(initialName);
   const [isEditingName, setIsEditingName] = useState(false);
 
@@ -78,11 +82,13 @@ export default function MealHeader({ mealName: initialName, mealTime: initialTim
               className="border px-2 py-1 rounded text-black"
             />
           ) : (
-            <p className="text-2xl">{mealName}</p>
+            <p
+              className="text-2xl cursor-pointer"
+              onClick={() => setIsEditingName(true)}
+            >
+              {mealName}
+            </p>
           )}
-          <button onClick={() => setIsEditingName(true)}>
-            <FaEdit className="text-white-500" />
-          </button>
 
           {isEditingTime ? (
             <div className="flex items-center space-x-1">
@@ -136,10 +142,18 @@ export default function MealHeader({ mealName: initialName, mealTime: initialTim
               className="absolute right-10 top-10 bg-white shadow-lg rounded z-50 w-52"
             >
               <ul className="text-sm text-gray-700">
-                <li className="hover:bg-gray-100 px-4 py-2 cursor-pointer">Quick Add Calories</li>
-                <li className="hover:bg-gray-100 px-4 py-2 cursor-pointer">Copy from Yesterday</li>
-                <li className="hover:bg-gray-100 px-4 py-2 cursor-pointer">Copy from Date</li>
-                <li className="hover:bg-gray-100 px-4 py-2 cursor-pointer">Copy to Date</li>
+                <li className="hover:bg-gray-100 px-4 py-2 cursor-pointer">
+                  Quick Add Calories
+                </li>
+                <li className="hover:bg-gray-100 px-4 py-2 cursor-pointer">
+                  Copy from Yesterday
+                </li>
+                <li className="hover:bg-gray-100 px-4 py-2 cursor-pointer">
+                  Copy from Date
+                </li>
+                <li className="hover:bg-gray-100 px-4 py-2 cursor-pointer">
+                  Copy to Date
+                </li>
               </ul>
             </div>
           )}

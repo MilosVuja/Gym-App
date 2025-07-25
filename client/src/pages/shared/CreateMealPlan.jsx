@@ -10,10 +10,32 @@ import {
 import MealBlock from "../../components/mealPlanner/MealBlock";
 
 export default function MealPlanner() {
+  const [macroValues, setMacroValues] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const calendarRef = useRef(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("nutritionPlanDraft");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const macros = parsed.appliedCustomMacros || parsed.recommendedMacros;
+
+        if (macros) {
+          setMacroValues([
+            macros.calories || 0,
+            macros.protein || 0,
+            macros.carbs || 0,
+            macros.fat || 0,
+          ]);
+        }
+      } catch (err) {
+        console.error("Error reading macros from localStorage:", err);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -89,6 +111,10 @@ export default function MealPlanner() {
       });
     }
   });
+
+  const remainingMacros = macroValues
+    ? macroValues.map((val, idx) => val - (grandTotals[idx] || 0))
+    : [0, 0, 0, 0];
 
   const handleDeleteMeal = (mealIndex) => {
     const updatedMeals = allMealsIngredients.filter((_, i) => i !== mealIndex);
@@ -171,8 +197,11 @@ export default function MealPlanner() {
       </div>
       <div className="flex flex-col items-end overflow-hidden pl-4">
         <TotalMacros label="Eaten macros:" values={grandTotals} />
-        <TotalMacros label="Daily macros:" values={grandTotals} />
-        <TotalMacros label="Remaining macros:" values={grandTotals} />
+        {macroValues && (
+          <TotalMacros label="Daily Macros" values={macroValues} />
+        )}
+
+        <TotalMacros label="Remaining Macros" values={remainingMacros} />
       </div>
     </div>
   );
