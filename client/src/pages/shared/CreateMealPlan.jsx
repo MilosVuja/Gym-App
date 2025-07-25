@@ -16,6 +16,34 @@ export default function MealPlanner() {
 
   const calendarRef = useRef(null);
 
+  const formatISODate = (date) => date.toISOString().split("T")[0];
+
+  const [, setMeals] = useState([
+    { id: Date.now(), name: "Meal 1", time: "08:00h" },
+  ]);
+
+  const handleAddMeal = (insertIndex) => {
+    const newMeal = {
+      id: Date.now(),
+      name: `Meal ${insertIndex + 2}`,
+      time: "12:00h",
+    };
+
+    // Insert into allMealsIngredients
+    setAllMealsIngredients((prev) => {
+      const updated = [...prev];
+      updated.splice(insertIndex + 1, 0, []);
+      return updated;
+    });
+
+    // Optional: if using meals array
+    setMeals((prevMeals) => {
+      const updated = [...prevMeals];
+      updated.splice(insertIndex + 1, 0, newMeal);
+      return updated;
+    });
+  };
+
   useEffect(() => {
     const saved = localStorage.getItem("nutritionPlanDraft");
     if (saved) {
