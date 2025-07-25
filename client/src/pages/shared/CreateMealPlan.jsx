@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from "react";
+import TotalMacros from "../../components/mealPlanner/TotalMacros";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {
@@ -49,6 +50,52 @@ export default function MealPlanner() {
     setCurrentDate(next);
   };
 
+  const [allMealsIngredients, setAllMealsIngredients] = useState([
+    [
+      { id: 0, name: "Egg", values: [100, 40, 10, 5] },
+      { id: 1, name: "Chicken Breast", values: [100, 40, 10, 5] },
+      { id: 2, name: "Rice", values: [50, 20, 5, 2] },
+    ],
+    [{ id: 3, name: "Salmon", values: [200, 60, 0, 10] }],
+    [{ id: 4, name: "Avocado", values: [200, 60, 0, 10] }],
+    [
+      { id: 5, name: "Egg", values: [100, 40, 10, 5] },
+      { id: 6, name: "Chicken Breast", values: [100, 40, 10, 5] },
+      { id: 7, name: "Rice", values: [50, 20, 5, 2] },
+    ],
+  ]);
+
+  const [mealsTotals, setMealsTotals] = useState([]);
+
+  const handleMealTotalChange = (mealIndex, totals) => {
+    setMealsTotals((prev) => {
+      const updated = [...prev];
+      const prevTotals = updated[mealIndex];
+
+      if (prevTotals && prevTotals.every((val, idx) => val === totals[idx])) {
+        return prev;
+      }
+
+      updated[mealIndex] = totals;
+      return updated;
+    });
+  };
+
+  const grandTotals = [0, 0, 0, 0];
+  mealsTotals.forEach((totals) => {
+    if (totals) {
+      totals.forEach((val, idx) => {
+        grandTotals[idx] += val;
+      });
+    }
+  });
+
+  const handleDeleteMeal = (mealIndex) => {
+    const updatedMeals = allMealsIngredients.filter((_, i) => i !== mealIndex);
+
+    setAllMealsIngredients(updatedMeals);
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-2xl text-center font-bold mb-6">Meal Planner</h1>
@@ -95,8 +142,6 @@ export default function MealPlanner() {
             </div>
           </div>
         </div>
-        <MealBlock />
-
         <div className="bg-red-500 flex text-white absolute top-17 right-0.5">
           <div className="flex flex-col items-center text-white p-4 w-20 border-r-4 border-white">
             <p>Calories</p>
@@ -115,32 +160,19 @@ export default function MealPlanner() {
             <p>g</p>
           </div>
         </div>
-        <MealBlock />
-        <MealBlock />
-        <MealBlock />
+        {allMealsIngredients.map((ingredients, idx) => (
+          <MealBlock
+            key={idx}
+            ingredients={ingredients}
+            onMealTotalChange={(totals) => handleMealTotalChange(idx, totals)}
+            onDelete={() => handleDeleteMeal(idx)}
+          />
+        ))}
       </div>
       <div className="flex flex-col items-end overflow-hidden pl-4">
-        <div className="flex text-white text-center space-x-2 py-1">
-          <p className="font-semibold">Eaten macros:</p>
-          <p className="flex-1 min-w-[50px] ml-30">200</p>
-          <p className="flex-1 min-w-[50px] ml-6">50</p>
-          <p className="flex-1 min-w-[50px] ml-6">0</p>
-          <p className="flex-1 min-w-[50px] ml-6 mr-4">0</p>
-        </div>
-        <div className="flex items-center text-white text-center space-x-2 py-1">
-          <p className="font-semibold">Daily macros:</p>
-          <p className="flex-1 min-w-[50px] ml-30">200</p>
-          <p className="flex-1 min-w-[50px] ml-6">50</p>
-          <p className="flex-1 min-w-[50px] ml-6">0</p>
-          <p className="flex-1 min-w-[50px] ml-6 mr-4">0</p>
-        </div>
-        <div className="flex items-center text-white text-center space-x-2 py-1">
-          <p className="font-semibold">Remaining macros:</p>
-          <p className="flex-1 min-w-[50px] ml-30">200</p>
-          <p className="flex-1 min-w-[50px] ml-6">50</p>
-          <p className="flex-1 min-w-[50px] ml-6">0</p>
-          <p className="flex-1 min-w-[50px] ml-6 mr-4">0</p>
-        </div>
+        <TotalMacros label="Eaten macros:" values={grandTotals} />
+        <TotalMacros label="Daily macros:" values={grandTotals} />
+        <TotalMacros label="Remaining macros:" values={grandTotals} />
       </div>
     </div>
   );

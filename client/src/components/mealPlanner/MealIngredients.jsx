@@ -15,9 +15,7 @@ export default function MealIngredient({ ingredient }) {
             {values.map((val, idx) => (
               <p
                 key={idx}
-                className={`flex-1 min-w-[50px] ${
-                  idx === 1 || idx === 2 ? "ml-8" : idx === 3 ? "ml-7 mr-3" : ""
-                }`}
+                className={"flex-1 min-w-[50px] w-20 "}
               >
                 {val}
               </p>
