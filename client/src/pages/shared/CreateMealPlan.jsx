@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import TotalMacros from "../../components/mealPlanner/TotalMacros";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -10,6 +11,9 @@ import {
 import MealBlock from "../../components/mealPlanner/MealBlock";
 
 export default function MealPlanner() {
+  const navigate = useNavigate();
+  const [noMacrosFound, setNoMacrosFound] = useState(false);
+
   const [macroValues, setMacroValues] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -29,14 +33,12 @@ export default function MealPlanner() {
       time: "12:00h",
     };
 
-    // Insert into allMealsIngredients
     setAllMealsIngredients((prev) => {
       const updated = [...prev];
       updated.splice(insertIndex + 1, 0, []);
       return updated;
     });
 
-    // Optional: if using meals array
     setMeals((prevMeals) => {
       const updated = [...prevMeals];
       updated.splice(insertIndex + 1, 0, newMeal);
@@ -45,25 +47,38 @@ export default function MealPlanner() {
   };
 
   useEffect(() => {
-    const saved = localStorage.getItem("nutritionPlanDraft");
-    if (saved) {
+    const nutritionByDateStr = localStorage.getItem("nutritionPlanByDate");
+    if (nutritionByDateStr) {
       try {
-        const parsed = JSON.parse(saved);
-        const macros = parsed.appliedCustomMacros || parsed.recommendedMacros;
+        const nutritionByDate = JSON.parse(nutritionByDateStr);
+        const key = formatISODate(currentDate);
 
-        if (macros) {
+        if (nutritionByDate[key]) {
+          const macros = nutritionByDate[key];
           setMacroValues([
             macros.calories || 0,
             macros.protein || 0,
             macros.carbs || 0,
             macros.fat || 0,
           ]);
+          setNoMacrosFound(false);
+        } else {
+          setMacroValues(null);
+          setNoMacrosFound(true);
         }
       } catch (err) {
-        console.error("Error reading macros from localStorage:", err);
+        console.error(
+          "Error parsing nutritionPlanByDate from localStorage:",
+          err
+        );
+        setMacroValues(null);
+        setNoMacrosFound(true);
       }
+    } else {
+      setMacroValues(null);
+      setNoMacrosFound(true);
     }
-  }, []);
+  }, [currentDate]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -144,93 +159,138 @@ export default function MealPlanner() {
     ? macroValues.map((val, idx) => val - (grandTotals[idx] || 0))
     : [0, 0, 0, 0];
 
-  const handleDeleteMeal = (mealIndex) => {
-    const updatedMeals = allMealsIngredients.filter((_, i) => i !== mealIndex);
+  const handleDeleteMeal = (mealIndexToRemove) => {
+    setAllMealsIngredients((prevMeals) =>
+      prevMeals.filter((_, index) => index !== mealIndexToRemove)
+    );
 
-    setAllMealsIngredients(updatedMeals);
+    setMealsTotals((prevTotals) =>
+      prevTotals.filter((_, index) => index !== mealIndexToRemove)
+    );
+  };
+
+  const handleDeleteIngredient = (mealIndex, ingredientIndex) => {
+    setAllMealsIngredients((prevMeals) =>
+      prevMeals.map((meal, idx) =>
+        idx !== mealIndex ? meal : meal.filter((_, i) => i !== ingredientIndex)
+      )
+    );
+  };
+
+  const handleAddIngredient = (mealIndex) => {
+    setAllMealsIngredients((prevMeals) =>
+      prevMeals.map((meal, idx) =>
+        idx !== mealIndex
+          ? meal
+          : [
+              ...meal,
+              { id: Date.now(), name: "New Ingredient", values: [0, 0, 0, 0] },
+            ]
+      )
+    );
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-2xl text-center font-bold mb-6">Meal Planner</h1>
-      <div className="relative">
-        <div className="border border-white-700 rounded">
-          <div className="flex justify-between p-4">
-            <div className="flex items-center">
-              <p className="text-xl font-semibold">Your Meals for:</p>
-            </div>
-            <div className="flex items-center space-x-4 relative mr-30">
-              <button onClick={goToPreviousDay}>
-                <FaLongArrowAltLeft />
-              </button>
-              <span className="font-medium w-[200px] inline-block text-center">
-                {formatDate(currentDate)}
-              </span>
-              <button onClick={goToNextDay}>
-                <FaLongArrowAltRight />
-              </button>
-            </div>
-            <div className="flex items-center space-x-2">
-              <button onClick={() => setIsCalendarOpen((open) => !open)}>
-                <FaCalendarAlt className="text-white-500" />
-              </button>
-              {isCalendarOpen && (
-                <div
-                  ref={calendarRef}
-                  className="absolute z-50 mt-2 bg-white shadow-lg rounded"
-                  style={{
-                    transform: "scale(0.9)",
-                    transformOrigin: "top left",
-                  }}
-                >
-                  <DatePicker
-                    selected={currentDate}
-                    onChange={(date) => {
-                      setCurrentDate(date);
-                      setIsCalendarOpen(false);
-                    }}
-                    inline
-                  />
+      {noMacrosFound ? (
+        <div className="text-center p-6 bg-yellow-100 text-yellow-900 rounded border border-yellow-300">
+          <p>No macros found for {formatDate(currentDate)}.</p>
+          <button
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => navigate("/members/create-nutrition-plan")}
+          >
+            Go to Nutrition Planner
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="relative">
+            <div className="border border-white-700 rounded">
+              <div className="flex justify-between p-4">
+                <div className="flex items-center">
+                  <p className="text-xl font-semibold">Your Meals for:</p>
                 </div>
-              )}
+                <div className="flex items-center space-x-4 relative mr-30">
+                  <button onClick={goToPreviousDay}>
+                    <FaLongArrowAltLeft />
+                  </button>
+                  <span className="font-medium w-[200px] inline-block text-center">
+                    {formatDate(currentDate)}
+                  </span>
+                  <button onClick={goToNextDay}>
+                    <FaLongArrowAltRight />
+                  </button>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button onClick={() => setIsCalendarOpen((open) => !open)}>
+                    <FaCalendarAlt className="text-white-500" />
+                  </button>
+                  {isCalendarOpen && (
+                    <div
+                      ref={calendarRef}
+                      className="absolute z-50 mt-2 bg-white shadow-lg rounded"
+                      style={{
+                        transform: "scale(0.9)",
+                        transformOrigin: "top left",
+                      }}
+                    >
+                      <DatePicker
+                        selected={currentDate}
+                        onChange={(date) => {
+                          setCurrentDate(date);
+                          setIsCalendarOpen(false);
+                        }}
+                        inline
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="bg-red-500 flex text-white absolute top-17 right-0.5">
-          <div className="flex flex-col items-center text-white p-4 w-20 border-r-4 border-white">
-            <p>Calories</p>
-            <p>kcal</p>
-          </div>
-          <div className="flex flex-col items-center text-white p-4 w-20 border-r-4 border-white">
-            <p>Proteins</p>
-            <p>g</p>
-          </div>
-          <div className="flex flex-col items-center text-white p-4 w-20 border-r-4 border-white">
-            <p>Carbs</p>
-            <p>g</p>
-          </div>
-          <div className="flex flex-col items-center text-white p-4 w-20 border-r-1 border-white">
-            <p>Fats</p>
-            <p>g</p>
-          </div>
-        </div>
-        {allMealsIngredients.map((ingredients, idx) => (
-          <MealBlock
-            key={idx}
-            ingredients={ingredients}
-            onMealTotalChange={(totals) => handleMealTotalChange(idx, totals)}
-            onDelete={() => handleDeleteMeal(idx)}
-          />
-        ))}
-      </div>
-      <div className="flex flex-col items-end overflow-hidden pl-4">
-        <TotalMacros label="Eaten macros:" values={grandTotals} />
-        {macroValues && (
-          <TotalMacros label="Daily Macros" values={macroValues} />
-        )}
+            <div className="bg-red-500 flex text-white absolute top-17 right-10">
+              <div className="flex flex-col items-center text-white p-4 w-20 border-r-1 border-white">
+                <p>Calories</p>
+                <p>kcal</p>
+              </div>
+              <div className="flex flex-col items-center text-white p-4 w-20 border-l-4 border-r-1 border-white">
+                <p>Proteins</p>
+                <p>g</p>
+              </div>
+              <div className="flex flex-col items-center text-white p-4 w-20 border-l-4 border-r-1 border-white">
+                <p>Carbs</p>
+                <p>g</p>
+              </div>
+              <div className="flex flex-col items-center text-white p-4 w-20 border-l-4 border-white">
+                <p>Fats</p>
+                <p>g</p>
+              </div>
+            </div>
 
-        <TotalMacros label="Remaining Macros" values={remainingMacros} />
-      </div>
+            {allMealsIngredients.map((ingredients, idx) => (
+              <MealBlock
+                key={idx}
+                mealIndex={idx}
+                ingredients={ingredients}
+                onMealTotalChange={(totals) =>
+                  handleMealTotalChange(idx, totals)
+                }
+                onDelete={() => handleDeleteMeal(idx)}
+                onDeleteIngredient={handleDeleteIngredient}
+                onAddIngredient={handleAddIngredient}
+                onAddMeal={() => handleAddMeal(idx)}
+              />
+            ))}
+          </div>
+          <div className="flex flex-col items-end overflow-hidden pl-4">
+            <TotalMacros label="Eaten macros:" values={grandTotals} />
+            {macroValues && (
+              <TotalMacros label="Daily Macros" values={macroValues} />
+            )}
+            <TotalMacros label="Remaining Macros" values={remainingMacros} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

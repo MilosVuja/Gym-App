@@ -37,7 +37,7 @@ export default function MealFooter({ ingredients, onMealTotalChange }) {
   }, [totals, onMealTotalChange]);
 
   return (
-    <div className="flex justify-between border border-white-700 rounded pl-2">
+    <div className="flex justify-between border border-white-700 pl-2">
       <div className="text-white">
         <div className="relative">
           <div className="flex text-white gap-78 items-center p-2 justify-between">
@@ -66,7 +66,9 @@ export default function MealFooter({ ingredients, onMealTotalChange }) {
         {totals.map((total, idx) => (
           <p
             key={idx}
-            className={"flex-1 min-w-[50px] w-20"}
+            className={`flex-1 min-w-[50px] w-20 ${
+              idx === 0 ? "" : idx === 1 ? "mr-0" : idx === 2 ? "" : "mr-8"
+            }`}
           >
             {total}
           </p>

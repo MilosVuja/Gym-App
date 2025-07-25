@@ -436,6 +436,23 @@ export default function NutritionPlanner() {
     });
   }
 
+  const saveMacrosForDate = (dateKey, macros) => {
+    const stored = localStorage.getItem("nutritionPlanByDate");
+    let nutritionByDate = {};
+    if (stored) {
+      try {
+        nutritionByDate = JSON.parse(stored);
+      } catch (e) {
+        console.warn("Failed to parse nutritionPlanByDate:", e);
+      }
+    }
+    nutritionByDate[dateKey] = macros;
+    localStorage.setItem(
+      "nutritionPlanByDate",
+      JSON.stringify(nutritionByDate)
+    );
+  };
+
   const handleAssignPlan = async () => {
     let baseMacros;
     let payload = {};
@@ -455,6 +472,8 @@ export default function NutritionPlanner() {
         ...prev,
         [selectedDayIndex]: baseMacros,
       }));
+
+      saveMacrosForDate(selectedDate, baseMacros);
 
       payload = {
         date: selectedDate,

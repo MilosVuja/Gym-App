@@ -6,6 +6,7 @@ export default function MealHeader({
   mealName: initialName,
   mealTime: initialTime,
   onDelete,
+  onAddMeal,
 }) {
   const [mealName, setMealName] = useState(initialName);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -128,7 +129,10 @@ export default function MealHeader({
         {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
 
         <div className="relative flex gap-4 items-center mt-2">
-          <button className="border border-white text-white py-1 px-3 rounded text-xs">
+          <button
+            className="border border-white text-white py-1 px-3 rounded text-xs"
+            onClick={onAddMeal}
+          >
             Add Meal
           </button>
 
