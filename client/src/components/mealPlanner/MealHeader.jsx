@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import FavoritesButton from "../common/FavoritesButton";
+import { FaTrashAlt } from "react-icons/fa";
 import { BsThreeDots } from "react-icons/bs";
 
 export default function MealHeader({
@@ -7,6 +8,8 @@ export default function MealHeader({
   mealTime: initialTime,
   onDelete,
   onAddMeal,
+  isFavorite = false,
+  onToggleFavorite = () => {},
 }) {
   const [mealName, setMealName] = useState(initialName);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -70,7 +73,7 @@ export default function MealHeader({
   };
 
   return (
-    <div className="flex justify-between items-center border border-white-700 rounded">
+    <div className="flex justify-between border border-white-700 rounded">
       <div className="flex flex-col text-white p-3">
         <div className="flex gap-4 items-center">
           {isEditingName ? (
@@ -166,6 +169,9 @@ export default function MealHeader({
             <FaTrashAlt className="text-white-500" />
           </button>
         </div>
+      </div>
+      <div className="flex items-end p-2">
+        <FavoritesButton isFavorite={isFavorite} onToggle={onToggleFavorite} />
       </div>
     </div>
   );

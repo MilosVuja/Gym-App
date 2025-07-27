@@ -20,6 +20,12 @@ import {
   addIngredientToMeal,
   deleteIngredientFromMeal,
 } from "../../redux/mealsSlice";
+
+import {
+  toggleFavoriteMeal,
+  toggleFavoriteIngredient,
+} from "../../redux/favoritesSlice";
+
 import PieChart from "../../components/PieChart";
 
 export default function MealPlanner() {
@@ -27,6 +33,10 @@ export default function MealPlanner() {
   const dispatch = useDispatch();
 
   const meals = useSelector((state) => state.meals.meals);
+  const favoriteMeals = useSelector((state) => state.favorites.favoriteMeals);
+  const favoriteIngredients = useSelector(
+    (state) => state.favorites.favoriteIngredients
+  );
 
   const [noMacrosFound, setNoMacrosFound] = useState(false);
   const [macroValues, setMacroValues] = useState(null);
@@ -159,6 +169,14 @@ export default function MealPlanner() {
     dispatch(deleteIngredientFromMeal({ mealId, ingredientId }));
   };
 
+  const toggleFavoriteMealHandler = (mealId) => {
+    dispatch(toggleFavoriteMeal(mealId));
+  };
+
+  const toggleFavoriteIngredientHandler = (ingredientId) => {
+    dispatch(toggleFavoriteIngredient(ingredientId));
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-2xl text-center font-bold mb-6">Meal Planner</h1>
@@ -243,6 +261,7 @@ export default function MealPlanner() {
                 mealId={meal.id}
                 mealName={meal.name}
                 ingredients={meal.ingredients}
+                onAddMeal={() => handleAddMeal(idx)}
                 onMealTotalChange={(totals) =>
                   handleMealTotalChange(idx, totals)
                 }
@@ -251,7 +270,10 @@ export default function MealPlanner() {
                 onAddIngredient={(ingredient) =>
                   handleAddIngredient(meal.id, ingredient)
                 }
-                onAddMeal={() => handleAddMeal(idx)}
+                favoriteMeals={favoriteMeals}
+                toggleFavoriteMeal={toggleFavoriteMealHandler}
+                favoriteIngredients={favoriteIngredients}
+                toggleFavoriteIngredient={toggleFavoriteIngredientHandler}
               />
             ))}
           </div>
