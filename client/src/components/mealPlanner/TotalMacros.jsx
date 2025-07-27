@@ -11,7 +11,7 @@ export default function TotalMacro({ label, values = [] }) {
             (idx === 1 || idx === 2 ? "" : idx === 3 ? "mr-9.5" : "")
           }
         >
-          {val}
+          {typeof val === "number" ? Math.round(val) : val}
         </p>
       ))}
     </div>

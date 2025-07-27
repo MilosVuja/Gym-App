@@ -66,11 +66,11 @@ export default function MealFooter({ ingredients, onMealTotalChange }) {
         {totals.map((total, idx) => (
           <p
             key={idx}
-            className={`flex-1 min-w-[50px] w-20 ${
-              idx === 0 ? "" : idx === 1 ? "mr-0" : idx === 2 ? "" : "mr-8"
-            }`}
+            className={`flex-1 min-w-[50px] w-20 font-mono ${
+              total < 0 ? "text-red-400" : ""
+            } ${idx === 0 ? "" : idx === 1 ? "mr-0" : idx === 2 ? "" : "mr-8"}`}
           >
-            {total}
+            {Math.round(total)}
           </p>
         ))}
       </div>

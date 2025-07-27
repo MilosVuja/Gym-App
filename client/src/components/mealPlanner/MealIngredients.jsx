@@ -16,7 +16,7 @@ export default function MealIngredients({ ingredient, onDelete }) {
         <div className="flex text-white text-center min-w-[180px]">
           {values.map((val, idx) => (
             <p key={idx} className="flex-1 min-w-[50px] w-20">
-              {val}
+              {typeof val === "number" ? Math.round(val) : val}
             </p>
           ))}
         </div>

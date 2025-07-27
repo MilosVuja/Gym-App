@@ -1,19 +1,33 @@
 import { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+
 import TotalMacros from "../../components/mealPlanner/TotalMacros";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+
 import {
   FaCalendarAlt,
   FaLongArrowAltLeft,
   FaLongArrowAltRight,
 } from "react-icons/fa";
+
 import MealBlock from "../../components/mealPlanner/MealBlock";
+
+import {
+  insertMealAtIndex,
+  deleteMeal,
+  addIngredientToMeal,
+  deleteIngredientFromMeal,
+} from "../../redux/mealsSlice";
 
 export default function MealPlanner() {
   const navigate = useNavigate();
-  const [noMacrosFound, setNoMacrosFound] = useState(false);
+  const dispatch = useDispatch();
 
+  const meals = useSelector((state) => state.meals.meals);
+
+  const [noMacrosFound, setNoMacrosFound] = useState(false);
   const [macroValues, setMacroValues] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -22,29 +36,19 @@ export default function MealPlanner() {
 
   const formatISODate = (date) => date.toISOString().split("T")[0];
 
-  const [, setMeals] = useState([
-    { id: Date.now(), name: "Meal 1", time: "08:00h" },
-  ]);
-
-  const handleAddMeal = (insertIndex) => {
-    const newMeal = {
-      id: Date.now(),
-      name: `Meal ${insertIndex + 2}`,
-      time: "12:00h",
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+        setIsCalendarOpen(false);
+      }
+    }
+    if (isCalendarOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
     };
-
-    setAllMealsIngredients((prev) => {
-      const updated = [...prev];
-      updated.splice(insertIndex + 1, 0, []);
-      return updated;
-    });
-
-    setMeals((prevMeals) => {
-      const updated = [...prevMeals];
-      updated.splice(insertIndex + 1, 0, newMeal);
-      return updated;
-    });
-  };
+  }, [isCalendarOpen]);
 
   useEffect(() => {
     const nutritionByDateStr = localStorage.getItem("nutritionPlanByDate");
@@ -80,20 +84,6 @@ export default function MealPlanner() {
     }
   }, [currentDate]);
 
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (calendarRef.current && !calendarRef.current.contains(event.target)) {
-        setIsCalendarOpen(false);
-      }
-    }
-    if (isCalendarOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isCalendarOpen]);
-
   const formatDate = (date) => {
     const options = { weekday: "long" };
     const weekday = new Intl.DateTimeFormat("en-US", options).format(date);
@@ -114,21 +104,6 @@ export default function MealPlanner() {
     next.setDate(next.getDate() + 1);
     setCurrentDate(next);
   };
-
-  const [allMealsIngredients, setAllMealsIngredients] = useState([
-    [
-      { id: 0, name: "Egg", values: [100, 40, 10, 5] },
-      { id: 1, name: "Chicken Breast", values: [100, 40, 10, 5] },
-      { id: 2, name: "Rice", values: [50, 20, 5, 2] },
-    ],
-    [{ id: 3, name: "Salmon", values: [200, 60, 0, 10] }],
-    [{ id: 4, name: "Avocado", values: [200, 60, 0, 10] }],
-    [
-      { id: 5, name: "Egg", values: [100, 40, 10, 5] },
-      { id: 6, name: "Chicken Breast", values: [100, 40, 10, 5] },
-      { id: 7, name: "Rice", values: [50, 20, 5, 2] },
-    ],
-  ]);
 
   const [mealsTotals, setMealsTotals] = useState([]);
 
@@ -159,35 +134,30 @@ export default function MealPlanner() {
     ? macroValues.map((val, idx) => val - (grandTotals[idx] || 0))
     : [0, 0, 0, 0];
 
-  const handleDeleteMeal = (mealIndexToRemove) => {
-    setAllMealsIngredients((prevMeals) =>
-      prevMeals.filter((_, index) => index !== mealIndexToRemove)
-    );
-
-    setMealsTotals((prevTotals) =>
-      prevTotals.filter((_, index) => index !== mealIndexToRemove)
-    );
+  const handleAddMeal = (insertIndex) => {
+    const newMeal = {
+      id: Date.now(),
+      time: "12:00h",
+      ingredients: [],
+    };
+    dispatch(insertMealAtIndex({ index: insertIndex, meal: newMeal }));
   };
 
-  const handleDeleteIngredient = (mealIndex, ingredientIndex) => {
-    setAllMealsIngredients((prevMeals) =>
-      prevMeals.map((meal, idx) =>
-        idx !== mealIndex ? meal : meal.filter((_, i) => i !== ingredientIndex)
-      )
-    );
+  const handleDeleteMeal = (mealId) => {
+    if (meals.length <= 1) {
+      alert("You cannot delete the last remaining meal.");
+      return;
+    }
+    dispatch(deleteMeal(mealId));
+    setMealsTotals((prev) => prev.filter((_, i) => meals[i]?.id !== mealId));
   };
 
-  const handleAddIngredient = (mealIndex) => {
-    setAllMealsIngredients((prevMeals) =>
-      prevMeals.map((meal, idx) =>
-        idx !== mealIndex
-          ? meal
-          : [
-              ...meal,
-              { id: Date.now(), name: "New Ingredient", values: [0, 0, 0, 0] },
-            ]
-      )
-    );
+  const handleDeleteIngredient = (mealId, ingredientId) => {
+    dispatch(deleteIngredientFromMeal({ mealId, ingredientId }));
+  };
+
+  const handleAddIngredient = (mealId, ingredient) => {
+    dispatch(addIngredientToMeal({ mealId, ingredient }));
   };
 
   return (
@@ -267,17 +237,23 @@ export default function MealPlanner() {
               </div>
             </div>
 
-            {allMealsIngredients.map((ingredients, idx) => (
+            {meals.map((meal, idx) => (
               <MealBlock
-                key={idx}
+                key={meal.id}
                 mealIndex={idx}
-                ingredients={ingredients}
+                mealId={meal.id}
+                mealName={meal.name}
+                ingredients={meal.ingredients}
                 onMealTotalChange={(totals) =>
                   handleMealTotalChange(idx, totals)
                 }
-                onDelete={() => handleDeleteMeal(idx)}
-                onDeleteIngredient={handleDeleteIngredient}
-                onAddIngredient={handleAddIngredient}
+                onDelete={() => handleDeleteMeal(meal.id)}
+                onDeleteIngredient={(ingredientId) =>
+                  handleDeleteIngredient(meal.id, ingredientId)
+                }
+                onAddIngredient={(ingredient) =>
+                  handleAddIngredient(meal.id, ingredient)
+                }
                 onAddMeal={() => handleAddMeal(idx)}
               />
             ))}
