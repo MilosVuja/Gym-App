@@ -1,16 +1,18 @@
 import { FaMinusCircle } from "react-icons/fa";
 
 export default function MealIngredients({ ingredient, onDelete }) {
-  const { name, grams, values } = ingredient;
+  const { name, quantity, unit, values } = ingredient;
 
   return (
     <div className="border border-white-700 overflow-hidden pl-4">
       <div className="flex justify-between items-center w-full p-1">
         <div className="flex items-center overflow-hidden flex-grow">
           <p className="truncate whitespace-nowrap overflow-hidden">
-            {name},
+            {name}
+            {quantity !== undefined && quantity !== null && quantity !== ""
+              ? `, ${quantity}${unit ? unit : ""}`
+              : ""}
           </p>
-          <p className="ml-2 whitespace-nowrap">{grams}</p>
         </div>
 
         <div className="flex text-white text-center min-w-[180px]">

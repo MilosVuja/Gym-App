@@ -17,7 +17,6 @@ export default function MealBlock({
 
   const handleAddIngredientClick = () => {
     navigate(`/members/meal-planner/select-ingredients/${mealId}`);
-
   };
 
   return (
@@ -28,13 +27,16 @@ export default function MealBlock({
         onDelete={onDelete}
         onAddMeal={onAddMeal}
       />
-      {ingredients.map((ingredient, index) => (
+      {ingredients.map((ingredient) => (
         <MealIngredients
-          key={ingredient.id || `${ingredient.name}-${index}`}
+          key={ingredient.id}
           ingredient={ingredient}
-          onDelete={() => onDeleteIngredient(mealIndex, index)}
+          onDelete={() => {
+            onDeleteIngredient(mealId, ingredient.id);
+          }}
         />
       ))}
+
       <div className="text-right mt-2 mr-1">
         <button
           onClick={handleAddIngredientClick}

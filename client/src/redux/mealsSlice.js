@@ -1,6 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// Helper to rename meals based on their index
 const renameMeals = (mealsArray) => {
   return mealsArray.map((meal, index) => ({
     ...meal,
@@ -13,15 +12,7 @@ const initialState = {
     {
       id: 1,
       name: "Meal 1",
-      ingredients: [
-        { id: 0, name: "Egg", values: [100, 40, 10, 5] },
-        { id: 1, name: "Chicken Breast", values: [100, 40, 10, 5] },
-      ],
-    },
-    {
-      id: 2,
-      name: "Meal 2",
-      ingredients: [{ id: 2, name: "Rice", values: [50, 20, 5, 2] }],
+      ingredients: [],
     },
   ],
 };
@@ -36,7 +27,6 @@ const mealsSlice = createSlice({
     },
     deleteMeal(state, action) {
       if (state.meals.length <= 1) {
-        // Don't delete if only one meal remains
         return;
       }
       state.meals = state.meals.filter((meal) => meal.id !== action.payload);
@@ -53,12 +43,9 @@ const mealsSlice = createSlice({
     },
     addIngredientToMeal: (state, action) => {
       const { mealId, ingredient } = action.payload;
-      console.log("Reducer adding ingredient", ingredient, "to mealId", mealId);
       const meal = state.meals.find((m) => m.id === mealId);
       if (meal) {
         meal.ingredients.push(ingredient);
-      } else {
-        console.warn("Meal not found for id", mealId);
       }
     },
 
@@ -71,13 +58,12 @@ const mealsSlice = createSlice({
         );
       }
     },
+
     insertMealAtIndex(state, action) {
       const { index, meal } = action.payload;
 
-      // Insert meal at the given index + 1
       state.meals.splice(index + 1, 0, meal);
 
-      // Reassign new ids and names to every meal
       state.meals.forEach((m, i) => {
         m.id = i + 1;
         m.name = `Meal ${i + 1}`;

@@ -20,6 +20,7 @@ import {
   addIngredientToMeal,
   deleteIngredientFromMeal,
 } from "../../redux/mealsSlice";
+import PieChart from "../../components/PieChart";
 
 export default function MealPlanner() {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ export default function MealPlanner() {
   const [macroValues, setMacroValues] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-
+  const [mealsTotals, setMealsTotals] = useState([]);
   const calendarRef = useRef(null);
 
   const formatISODate = (date) => date.toISOString().split("T")[0];
@@ -105,8 +106,6 @@ export default function MealPlanner() {
     setCurrentDate(next);
   };
 
-  const [mealsTotals, setMealsTotals] = useState([]);
-
   const handleMealTotalChange = (mealIndex, totals) => {
     setMealsTotals((prev) => {
       const updated = [...prev];
@@ -152,12 +151,12 @@ export default function MealPlanner() {
     setMealsTotals((prev) => prev.filter((_, i) => meals[i]?.id !== mealId));
   };
 
-  const handleDeleteIngredient = (mealId, ingredientId) => {
-    dispatch(deleteIngredientFromMeal({ mealId, ingredientId }));
-  };
-
   const handleAddIngredient = (mealId, ingredient) => {
     dispatch(addIngredientToMeal({ mealId, ingredient }));
+  };
+
+  const handleDeleteIngredient = (mealId, ingredientId) => {
+    dispatch(deleteIngredientFromMeal({ mealId, ingredientId }));
   };
 
   return (
@@ -248,9 +247,7 @@ export default function MealPlanner() {
                   handleMealTotalChange(idx, totals)
                 }
                 onDelete={() => handleDeleteMeal(meal.id)}
-                onDeleteIngredient={(ingredientId) =>
-                  handleDeleteIngredient(meal.id, ingredientId)
-                }
+                onDeleteIngredient={handleDeleteIngredient}
                 onAddIngredient={(ingredient) =>
                   handleAddIngredient(meal.id, ingredient)
                 }
@@ -267,6 +264,11 @@ export default function MealPlanner() {
           </div>
         </>
       )}
+      <PieChart
+        protein={grandTotals[1]}
+        carbs={grandTotals[2]}
+        fat={grandTotals[3]}
+      />
     </div>
   );
 }
