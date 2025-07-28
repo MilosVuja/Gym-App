@@ -1,15 +1,16 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import FavoritesButton from "../common/FavoritesButton";
 import { FaTrashAlt } from "react-icons/fa";
 import { BsThreeDots } from "react-icons/bs";
 
 export default function MealHeader({
+  mealId,
   mealName: initialName,
   mealTime: initialTime,
   onDelete,
   onAddMeal,
-  isFavorite = false,
-  onToggleFavorite = () => {},
+  favoriteMeals = [],
+  toggleFavoriteMeal,
 }) {
   const [mealName, setMealName] = useState(initialName);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -28,6 +29,8 @@ export default function MealHeader({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef();
+
+  const isFavorite = favoriteMeals.includes(mealId);
 
   const handleClickOutside = (event) => {
     if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -49,7 +52,7 @@ export default function MealHeader({
         setHour(val.padStart(2, "0"));
         setError("");
       } else {
-        setError("Hour must be 00-23");
+        setError("Hour must be 00–23");
       }
     }
   };
@@ -61,7 +64,7 @@ export default function MealHeader({
         setMinute(val.padStart(2, "0"));
         setError("");
       } else {
-        setError("Minute must be 00-59");
+        setError("Minute must be 00–59");
       }
     }
   };
@@ -171,7 +174,10 @@ export default function MealHeader({
         </div>
       </div>
       <div className="flex items-end p-2">
-        <FavoritesButton isFavorite={isFavorite} onToggle={onToggleFavorite} />
+        <FavoritesButton
+          isFavorite={isFavorite}
+          onToggle={() => toggleFavoriteMeal(mealId)}
+        />
       </div>
     </div>
   );

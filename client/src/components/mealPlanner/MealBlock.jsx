@@ -6,7 +6,6 @@ import IngredientEditModal from "./IngredientEditModal";
 import MealFooter from "./MealFooter";
 import { IoIosAddCircle } from "react-icons/io";
 import { fetchIngredientFromNutritionix } from "../../api/nutritionApi";
-import { FaRegStar, FaStar } from "react-icons/fa";
 
 export default function MealBlock({
   ingredients,
@@ -17,11 +16,9 @@ export default function MealBlock({
   onEditIngredient,
   onDeleteIngredient,
   onAddMeal,
-  favoriteMeals,
-  toggleFavoriteMeal,
 }) {
   const navigate = useNavigate();
-
+  const [favoriteMeals, setFavoriteMeals] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
   const [modalQty, setModalQty] = useState(1);
@@ -81,25 +78,23 @@ export default function MealBlock({
     setSelectedIngredient(null);
   };
 
-  const isFavorite = favoriteMeals.includes(mealId);
+  const handleToggleFavorite = (id) => {
+    setFavoriteMeals((prev) =>
+      prev.includes(id) ? prev.filter((mealId) => mealId !== id) : [...prev, id]
+    );
+  };
 
   return (
     <div className="border border-white shadow-sm rounded">
-      <div className="flex justify-between items-center px-4 pt-4">
-        <MealHeader
-          mealName={`Meal ${mealIndex + 1}`}
-          mealTime="08:00h"
-          onDelete={onDelete}
-          onAddMeal={onAddMeal}
-        />
-        <button
-          onClick={() => toggleFavoriteMeal(mealId)}
-          className="text-yellow-400 text-xl focus:outline-none"
-          title={isFavorite ? "Unfavorite" : "Mark as favorite"}
-        >
-          {isFavorite ? <FaStar /> : <FaRegStar />}
-        </button>
-      </div>
+      <MealHeader
+        mealId={mealId}
+        mealName={`Meal ${mealIndex + 1}`}
+        mealTime="08:00h"
+        onDelete={onDelete}
+        onAddMeal={onAddMeal}
+        favoriteMeals={favoriteMeals}
+        toggleFavoriteMeal={handleToggleFavorite}
+      />
 
       {ingredients.map((ingredient) => (
         <MealIngredients
