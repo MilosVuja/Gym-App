@@ -13,6 +13,10 @@ export default function IngredientEditModal({
   onSave,
 }) {
   const modalRef = useRef();
+
+  const [localQty, setLocalQty] = useState(quantity || 1);
+  const [localUnitIndex, setLocalUnitIndex] = useState(selectedUnitIndex || 0);
+
   const [nutritionData, setNutritionData] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,6 +29,11 @@ export default function IngredientEditModal({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
+
+  useEffect(() => {
+    setLocalQty(quantity || 1);
+    setLocalUnitIndex(selectedUnitIndex || 0);
+  }, [ingredient?.name, quantity, selectedUnitIndex]);
 
   useEffect(() => {
     if (!ingredient?.name) {
@@ -52,14 +61,17 @@ export default function IngredientEditModal({
           setNutritionData(null);
         }
       })
-      .catch(() => setNutritionData(null))
+      .catch((err) => {
+        console.error("Nutritionix fetch error:", err);
+        setNutritionData(null);
+      })
       .finally(() => setLoading(false));
-  }, [ingredient]);
+  }, [ingredient?.name]);
 
-  const safeSelectedUnitIndex =
-    selectedUnitIndex >= 0 &&
-    selectedUnitIndex < (nutritionData?.alt_measures?.length || units.length)
-      ? selectedUnitIndex
+  const safeUnitIndex =
+    localUnitIndex >= 0 &&
+    localUnitIndex < (nutritionData?.alt_measures?.length || units.length)
+      ? localUnitIndex
       : 0;
 
   const getScaledValue = (macroKey) => {
@@ -67,24 +79,24 @@ export default function IngredientEditModal({
 
     const baseWeight = nutritionData.serving_weight_grams || 100;
     const unitWeight =
-      nutritionData.alt_measures?.[safeSelectedUnitIndex]?.serving_weight ||
-      units?.[safeSelectedUnitIndex]?.serving_weight ||
+      nutritionData.alt_measures?.[safeUnitIndex]?.serving_weight ||
+      units?.[safeUnitIndex]?.serving_weight ||
       baseWeight;
 
-    const ratio = ((quantity || 1) * unitWeight) / baseWeight;
+    const qty = typeof localQty === "number" && localQty > 0 ? localQty : 0;
+    const ratio = (qty * unitWeight) / baseWeight;
     const val = nutritionData[macroKey];
 
-    return val !== undefined && val !== null ? Math.round(val * ratio) : null;
+    return val != null ? Math.round(val * ratio) : null;
   };
 
-  const handleModalSave = () => {
-    const updated = {
+  const handleSave = () => {
+    const updatedIngredient = {
       ...ingredient,
-      quantity,
-      unitIndex: selectedUnitIndex,
+      quantity: localQty,
       unit:
-        units?.[selectedUnitIndex]?.measure ||
-        ingredient?.alt_measures?.[selectedUnitIndex]?.measure ||
+        nutritionData?.alt_measures?.[safeUnitIndex]?.measure ||
+        units?.[safeUnitIndex]?.measure ||
         "",
       values: [
         getScaledValue("nf_calories"),
@@ -93,8 +105,7 @@ export default function IngredientEditModal({
         getScaledValue("nf_total_fat"),
       ],
     };
-
-    onSave(updated);
+    onSave(updatedIngredient);
   };
 
   return (
@@ -118,23 +129,28 @@ export default function IngredientEditModal({
             type="number"
             min="0.1"
             step="0.1"
-            value={quantity || ""}
+            value={localQty === 0 ? "" : localQty}
             onChange={(e) => {
-              const val = Number(e.target.value);
+              const val = parseFloat(e.target.value);
               if (!isNaN(val) && val > 0) {
-                onQtyChange(val);
+                setLocalQty(val);
+                onQtyChange && onQtyChange(val);
               } else if (e.target.value === "") {
-                onQtyChange("");
+                setLocalQty(0);
+                onQtyChange && onQtyChange(0);
               }
             }}
             className="w-20 rounded border p-1 text-center text-black"
           />
           <span>servings of</span>
           <select
-            value={safeSelectedUnitIndex}
+            value={localUnitIndex}
             onChange={(e) => {
               const idx = Number(e.target.value);
-              if (!isNaN(idx)) onUnitChange(idx);
+              if (!isNaN(idx)) {
+                setLocalUnitIndex(idx);
+                onUnitChange && onUnitChange(idx);
+              }
             }}
             className="w-32 rounded border p-1 text-black"
           >
@@ -189,7 +205,7 @@ export default function IngredientEditModal({
         </div>
 
         <button
-          onClick={handleModalSave}
+          onClick={handleSave}
           className="w-full bg-green-600 hover:bg-green-700 text-white py-1 rounded"
         >
           Save Changes

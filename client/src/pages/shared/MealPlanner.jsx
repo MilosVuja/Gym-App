@@ -18,6 +18,7 @@ import {
   insertMealAtIndex,
   deleteMeal,
   addIngredientToMeal,
+  editIngredientInMeal,
   deleteIngredientFromMeal,
 } from "../../redux/mealsSlice";
 
@@ -165,6 +166,11 @@ export default function MealPlanner() {
     dispatch(addIngredientToMeal({ mealId, ingredient }));
   };
 
+  const handleEditIngredient = (mealIndex, ingredientIndex, updatedIngredient) => {
+  dispatch(editIngredientInMeal({ mealIndex, ingredientIndex, updatedIngredient }));
+};
+
+
   const handleDeleteIngredient = (mealId, ingredientId) => {
     dispatch(deleteIngredientFromMeal({ mealId, ingredientId }));
   };
@@ -262,6 +268,7 @@ export default function MealPlanner() {
                 mealName={meal.name}
                 ingredients={meal.ingredients}
                 onAddMeal={() => handleAddMeal(idx)}
+                onEditIngredient={handleEditIngredient}
                 onMealTotalChange={(totals) =>
                   handleMealTotalChange(idx, totals)
                 }

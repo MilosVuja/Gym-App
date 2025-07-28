@@ -18,7 +18,7 @@ export default function MealBlock({
   onAddMeal,
 }) {
   const navigate = useNavigate();
-  const [favoriteMeals, setFavoriteMeals] = useState([]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedIngredient, setSelectedIngredient] = useState(null);
   const [modalQty, setModalQty] = useState(1);
@@ -31,21 +31,10 @@ export default function MealBlock({
   const handleEditIngredientClick = async (ingredient) => {
     try {
       const query = ingredient.food_name || ingredient.name || "";
-
-      if (!query.trim()) {
-        console.warn(
-          "Ingredient missing valid name for nutrition fetch:",
-          ingredient
-        );
-        return;
-      }
+      if (!query.trim()) return;
 
       const fullData = await fetchIngredientFromNutritionix(query);
-
-      if (!fullData || !fullData.alt_measures) {
-        console.warn("No alt_measures found for", query);
-        return;
-      }
+      if (!fullData || !fullData.alt_measures) return;
 
       const matchedUnitIndex = fullData.alt_measures.findIndex(
         (u) => u.measure === ingredient.unit
@@ -54,8 +43,8 @@ export default function MealBlock({
       setSelectedIngredient({
         ...fullData,
         id: ingredient.id,
+        name: fullData.food_name,
       });
-
       setModalQty(ingredient.quantity || 1);
       setModalUnitIndex(matchedUnitIndex >= 0 ? matchedUnitIndex : 0);
       setIsModalOpen(true);
@@ -65,23 +54,21 @@ export default function MealBlock({
   };
 
   const handleSaveIngredient = (updatedIngredient) => {
+    const fullUpdatedIngredient = {
+      ...selectedIngredient,
+      ...updatedIngredient,
+      name: selectedIngredient.name,
+      values: updatedIngredient.values || selectedIngredient.values,
+    };
+
     const ingIndex = ingredients.findIndex(
-      (ing) => ing.id === updatedIngredient.id
+      (i) => i.id === fullUpdatedIngredient.id
     );
-    if (ingIndex === -1) {
-      console.warn("Ingredient to update not found:", updatedIngredient.id);
-      return;
+    if (ingIndex !== -1) {
+      onEditIngredient(mealIndex, ingIndex, fullUpdatedIngredient);
+      setIsModalOpen(false);
+      setSelectedIngredient(null);
     }
-
-    onEditIngredient(mealIndex, ingIndex, updatedIngredient);
-    setIsModalOpen(false);
-    setSelectedIngredient(null);
-  };
-
-  const handleToggleFavorite = (id) => {
-    setFavoriteMeals((prev) =>
-      prev.includes(id) ? prev.filter((mealId) => mealId !== id) : [...prev, id]
-    );
   };
 
   return (
@@ -92,8 +79,6 @@ export default function MealBlock({
         mealTime="08:00h"
         onDelete={onDelete}
         onAddMeal={onAddMeal}
-        favoriteMeals={favoriteMeals}
-        toggleFavoriteMeal={handleToggleFavorite}
       />
 
       {ingredients.map((ingredient) => (
@@ -101,7 +86,7 @@ export default function MealBlock({
           key={ingredient.id}
           ingredient={ingredient}
           onDelete={() => onDeleteIngredient(mealId, ingredient.id)}
-          onEdit={handleEditIngredientClick}
+          onEdit={() => handleEditIngredientClick(ingredient)}
         />
       ))}
 
@@ -113,16 +98,11 @@ export default function MealBlock({
           units={selectedIngredient.alt_measures || []}
           onQtyChange={setModalQty}
           onUnitChange={setModalUnitIndex}
-          onClose={() => setIsModalOpen(false)}
-          onSave={(qty, unitIdx, newValues) => {
-            const updatedIngredient = {
-              ...selectedIngredient,
-              quantity: qty,
-              unit: selectedIngredient.alt_measures[unitIdx]?.measure,
-              values: newValues,
-            };
-            handleSaveIngredient(updatedIngredient);
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedIngredient(null);
           }}
+          onSave={handleSaveIngredient}
         />
       )}
 
@@ -130,8 +110,9 @@ export default function MealBlock({
         <button
           onClick={handleAddIngredientClick}
           className="text-sm text-blue-500"
+          title="Add ingredient"
         >
-          <IoIosAddCircle className="size-5" title="Add ingredient" />
+          <IoIosAddCircle className="size-5" />
         </button>
       </div>
 
