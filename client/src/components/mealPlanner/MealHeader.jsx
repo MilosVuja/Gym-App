@@ -30,7 +30,7 @@ export default function MealHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef();
 
-  const isFavorite = favoriteMeals.includes(mealId);
+  const isFavorite = favoriteMeals.includes(String(mealId));
 
   const handleClickOutside = (event) => {
     if (menuRef.current && !menuRef.current.contains(event.target)) {

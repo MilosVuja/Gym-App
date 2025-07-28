@@ -16,6 +16,8 @@ export default function MealBlock({
   onEditIngredient,
   onDeleteIngredient,
   onAddMeal,
+  toggleFavoriteMeal,
+  favoriteMeals,
 }) {
   const navigate = useNavigate();
 
@@ -79,6 +81,8 @@ export default function MealBlock({
         mealTime="08:00h"
         onDelete={onDelete}
         onAddMeal={onAddMeal}
+        toggleFavoriteMeal={toggleFavoriteMeal}
+        favoriteMeals={favoriteMeals}
       />
 
       {ingredients.map((ingredient) => (

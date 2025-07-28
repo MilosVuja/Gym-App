@@ -31,7 +31,7 @@ const favoritesSlice = createSlice({
     },
 
     toggleFavoriteMeal(state, action) {
-      const id = action.payload;
+      const id = String(action.payload);
       if (state.favoriteMeals.includes(id)) {
         state.favoriteMeals = state.favoriteMeals.filter(
           (favId) => favId !== id
@@ -40,6 +40,7 @@ const favoritesSlice = createSlice({
         state.favoriteMeals.push(id);
       }
     },
+
     toggleFavoriteIngredient(state, action) {
       const id = action.payload;
       if (state.favoriteIngredients.includes(id)) {
