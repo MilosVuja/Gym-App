@@ -6,7 +6,7 @@ import CheckboxDropdown from "../../components/training/MakeYourTraining/Checkbo
 import SupersetCard from "../../components/training/MakeYourTraining/SuperSetCard";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
-export default function CreateTrainingPlan() {
+export default function TrainingPlanner() {
   const [duration, setDuration] = useState("");
   const [timesPerWeek, setTimesPerWeek] = useState("");
   const [startDate, setStartDate] = useState("");

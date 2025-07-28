@@ -15,6 +15,7 @@ import {
 import MealBlock from "../../components/mealPlanner/MealBlock";
 
 import {
+  updateMealName,
   insertMealAtIndex,
   deleteMeal,
   addIngredientToMeal,
@@ -34,7 +35,9 @@ export default function MealPlanner() {
   const dispatch = useDispatch();
 
   const meals = useSelector((state) => state.meals.meals);
+
   const favoriteMeals = useSelector((state) => state.favorites.favoriteMeals);
+
   const favoriteIngredients = useSelector(
     (state) => state.favorites.favoriteIngredients
   );
@@ -144,6 +147,10 @@ export default function MealPlanner() {
     ? macroValues.map((val, idx) => val - (grandTotals[idx] || 0))
     : [0, 0, 0, 0];
 
+  function handleMealNameChange(mealId, newName) {
+    dispatch(updateMealName({ mealId, newName }));
+  }
+
   const handleAddMeal = (insertIndex) => {
     const newMeal = {
       id: Date.now(),
@@ -166,10 +173,15 @@ export default function MealPlanner() {
     dispatch(addIngredientToMeal({ mealId, ingredient }));
   };
 
-  const handleEditIngredient = (mealIndex, ingredientIndex, updatedIngredient) => {
-  dispatch(editIngredientInMeal({ mealIndex, ingredientIndex, updatedIngredient }));
-};
-
+  const handleEditIngredient = (
+    mealIndex,
+    ingredientIndex,
+    updatedIngredient
+  ) => {
+    dispatch(
+      editIngredientInMeal({ mealIndex, ingredientIndex, updatedIngredient })
+    );
+  };
 
   const handleDeleteIngredient = (mealId, ingredientId) => {
     dispatch(deleteIngredientFromMeal({ mealId, ingredientId }));
@@ -266,6 +278,7 @@ export default function MealPlanner() {
                 mealIndex={idx}
                 mealId={meal.id}
                 mealName={meal.name}
+                onNameChange={handleMealNameChange}
                 ingredients={meal.ingredients}
                 onAddMeal={() => handleAddMeal(idx)}
                 onEditIngredient={handleEditIngredient}

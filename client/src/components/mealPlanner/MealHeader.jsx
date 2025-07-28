@@ -6,6 +6,7 @@ import { BsThreeDots } from "react-icons/bs";
 export default function MealHeader({
   mealId,
   mealName: initialName,
+  onNameChange,
   mealTime: initialTime,
   onDelete,
   onAddMeal,
@@ -84,7 +85,10 @@ export default function MealHeader({
               type="text"
               value={mealName}
               onChange={(e) => setMealName(e.target.value)}
-              onBlur={() => setIsEditingName(false)}
+              onBlur={() => {
+                setIsEditingName(false);
+                if (onNameChange) onNameChange(mealId, mealName);
+              }}
               autoFocus
               className="border px-2 py-1 rounded text-black"
             />

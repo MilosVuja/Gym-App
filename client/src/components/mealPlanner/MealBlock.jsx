@@ -11,6 +11,8 @@ export default function MealBlock({
   ingredients,
   mealIndex,
   mealId,
+  mealName,
+  onNameChange,
   onMealTotalChange,
   onDelete,
   onEditIngredient,
@@ -77,7 +79,8 @@ export default function MealBlock({
     <div className="border border-white shadow-sm rounded">
       <MealHeader
         mealId={mealId}
-        mealName={`Meal ${mealIndex + 1}`}
+        mealName={mealName}
+        onNameChange={onNameChange}
         mealTime="08:00h"
         onDelete={onDelete}
         onAddMeal={onAddMeal}

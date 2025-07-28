@@ -35,11 +35,10 @@ const mealsSlice = createSlice({
         meal.name = `Meal ${i + 1}`;
       });
     },
-
     updateMealName(state, action) {
-      const { mealId, name } = action.payload;
+      const { mealId, newName } = action.payload;
       const meal = state.meals.find((m) => m.id === mealId);
-      if (meal) meal.name = name;
+      if (meal) meal.name = newName;
     },
     addIngredientToMeal: (state, action) => {
       const { mealId, ingredient } = action.payload;
@@ -48,7 +47,6 @@ const mealsSlice = createSlice({
         meal.ingredients.push(ingredient);
       }
     },
-
     editIngredientInMeal: (state, action) => {
       const { mealIndex, ingredientIndex, updatedIngredient } = action.payload;
       state.meals[mealIndex].ingredients[ingredientIndex] = updatedIngredient;
@@ -63,7 +61,6 @@ const mealsSlice = createSlice({
         );
       }
     },
-
     insertMealAtIndex(state, action) {
       const { index, meal } = action.payload;
 

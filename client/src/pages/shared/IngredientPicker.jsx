@@ -9,6 +9,7 @@ export default function IngredientPicker() {
   const navigate = useNavigate();
 
   const meals = useSelector((state) => state.meals.meals);
+  const meal = meals.find((m) => m.id === Number(mealId));
 
   const handleCancel = () => navigate("/members/meal-planner");
 
@@ -185,8 +186,8 @@ export default function IngredientPicker() {
   return (
     <div className="max-w-4xl mx-auto p-4">
       <h1 className="text-4xl text-center font-bold mb-10">
-        Add food to Meal{" "}
-        {String(mealId).charAt(0).toUpperCase() + String(mealId).slice(1)}
+        Add food to{" "}
+        <span className="italic text-black">{meal?.name || "Meal"}</span>
       </h1>
 
       <div className="flex justify-center gap-4">
