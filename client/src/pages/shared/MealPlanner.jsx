@@ -16,6 +16,7 @@ import MealBlock from "../../components/mealPlanner/MealBlock";
 
 import {
   updateMealName,
+  updateMealTime,
   insertMealAtIndex,
   deleteMeal,
   addIngredientToMeal,
@@ -151,10 +152,14 @@ export default function MealPlanner() {
     dispatch(updateMealName({ mealId, newName }));
   }
 
+  const handleTimeChange = (mealId, newTime) => {
+    dispatch(updateMealTime({ mealId, newTime }));
+  };
+
   const handleAddMeal = (insertIndex) => {
     const newMeal = {
       id: Date.now(),
-      time: "12:00h",
+      time: "08:00h",
       ingredients: [],
     };
     dispatch(insertMealAtIndex({ index: insertIndex, meal: newMeal }));
@@ -278,7 +283,9 @@ export default function MealPlanner() {
                 mealIndex={idx}
                 mealId={meal.id}
                 mealName={meal.name}
+                mealTime={meal.time}
                 onNameChange={handleMealNameChange}
+                onTimeChange={handleTimeChange}
                 ingredients={meal.ingredients}
                 onAddMeal={() => handleAddMeal(idx)}
                 onEditIngredient={handleEditIngredient}

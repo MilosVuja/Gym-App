@@ -12,6 +12,7 @@ const initialState = {
     {
       id: 1,
       name: "Meal 1",
+      time: "08:00",
       ingredients: [],
     },
   ],
@@ -40,6 +41,14 @@ const mealsSlice = createSlice({
       const meal = state.meals.find((m) => m.id === mealId);
       if (meal) meal.name = newName;
     },
+    updateMealTime(state, action) {
+      const { mealId, time } = action.payload;
+      const meal = state.meals.find((m) => m.id === mealId);
+      if (meal) {
+        meal.time = time;
+      }
+    },
+
     addIngredientToMeal: (state, action) => {
       const { mealId, ingredient } = action.payload;
       const meal = state.meals.find((m) => m.id === mealId);
@@ -78,6 +87,7 @@ export const {
   addMeal,
   deleteMeal,
   updateMealName,
+  updateMealTime,
   addIngredientToMeal,
   editIngredientInMeal,
   deleteIngredientFromMeal,

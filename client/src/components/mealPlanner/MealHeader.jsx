@@ -7,79 +7,71 @@ export default function MealHeader({
   mealId,
   mealName: initialName,
   onNameChange,
-  mealTime: initialTime,
+  mealTime: initialTime = "08:00h",
+  onTimeChange,
   onDelete,
   onAddMeal,
-  favoriteMeals = [],
   toggleFavoriteMeal,
+  favoriteMeals = [],
 }) {
   const [mealName, setMealName] = useState(initialName);
   const [isEditingName, setIsEditingName] = useState(false);
 
-  const [hour, setHour] = useState(() => {
-    const match = initialTime.match(/^(\d{2}):(\d{2})h$/);
-    return match ? match[1] : "00";
-  });
-  const [minute, setMinute] = useState(() => {
-    const match = initialTime.match(/^(\d{2}):(\d{2})h$/);
-    return match ? match[2] : "00";
-  });
-
+  const parseTime = (timeStr) => timeStr?.replace("h", "") || "08:00";
+  const [timeValue, setTimeValue] = useState(parseTime(initialTime));
   const [isEditingTime, setIsEditingTime] = useState(false);
   const [error, setError] = useState("");
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef();
+  const timeInputRef = useRef();
 
   const isFavorite = favoriteMeals.includes(String(mealId));
 
-  const handleClickOutside = (event) => {
-    if (menuRef.current && !menuRef.current.contains(event.target)) {
-      setMenuOpen(false);
-    }
-  };
-
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
+      }
+    };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const composedTime = `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}h`;
-
-  const validateAndSetHour = (val) => {
-    if (/^\d{0,2}$/.test(val)) {
-      const num = Number(val);
-      if (num >= 0 && num <= 23) {
-        setHour(val.padStart(2, "0"));
-        setError("");
-      } else {
-        setError("Hour must be 00–23");
-      }
+  useEffect(() => {
+    if (isEditingTime && timeInputRef.current) {
+      timeInputRef.current.focus();
+      timeInputRef.current.setSelectionRange(
+        timeValue.length,
+        timeValue.length
+      );
     }
-  };
+  }, [isEditingTime, timeValue.length]);
 
-  const validateAndSetMinute = (val) => {
-    if (/^\d{0,2}$/.test(val)) {
-      const num = Number(val);
-      if (num >= 0 && num <= 59) {
-        setMinute(val.padStart(2, "0"));
-        setError("");
-      } else {
-        setError("Minute must be 00–59");
-      }
-    }
-  };
-
-  const handleTimeBlur = () => {
-    if (!error) {
+  const commitTimeChange = () => {
+    const trimmed = timeValue.trim();
+    const isValid = /^([01]?\d|2[0-3]):([0-5]\d)$/.test(trimmed);
+    if (isValid) {
+      const [h, m] = trimmed.split(":");
+      const formatted = `${h.padStart(2, "0")}:${m}h`;
+      onTimeChange?.(mealId, formatted);
+      setError("");
       setIsEditingTime(false);
+    } else {
+      setError("Invalid time format (HH:MM)");
     }
+  };
+
+  const cancelTimeEdit = () => {
+    setTimeValue(parseTime(initialTime));
+    setIsEditingTime(false);
+    setError("");
   };
 
   return (
     <div className="flex justify-between border border-white-700 rounded">
       <div className="flex flex-col text-white p-3">
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-4 items-end">
           {isEditingName ? (
             <input
               type="text"
@@ -87,7 +79,7 @@ export default function MealHeader({
               onChange={(e) => setMealName(e.target.value)}
               onBlur={() => {
                 setIsEditingName(false);
-                if (onNameChange) onNameChange(mealId, mealName);
+                onNameChange?.(mealId, mealName);
               }}
               autoFocus
               className="border px-2 py-1 rounded text-black"
@@ -102,27 +94,23 @@ export default function MealHeader({
           )}
 
           {isEditingTime ? (
-            <div className="flex items-center space-x-1">
-              <input
-                type="text"
-                value={hour}
-                onChange={(e) => validateAndSetHour(e.target.value)}
-                onBlur={handleTimeBlur}
-                maxLength={2}
-                autoFocus
-                className="border px-2 py-1 rounded text-black w-12 text-center"
-              />
-              <span>:</span>
-              <input
-                type="text"
-                value={minute}
-                onChange={(e) => validateAndSetMinute(e.target.value)}
-                onBlur={handleTimeBlur}
-                maxLength={2}
-                className="border px-2 py-1 rounded text-black w-12 text-center"
-              />
-              <span>h</span>
-            </div>
+            <input
+              ref={timeInputRef}
+              type="text"
+              value={timeValue}
+              onChange={(e) => setTimeValue(e.target.value)}
+              onBlur={commitTimeChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  commitTimeChange();
+                } else if (e.key === "Escape") {
+                  cancelTimeEdit();
+                }
+              }}
+              className="border px-2 py-1 rounded text-black w-20 text-center"
+              placeholder="08:00"
+              maxLength={5}
+            />
           ) : (
             <p
               onClick={() => {
@@ -131,7 +119,7 @@ export default function MealHeader({
               }}
               className="cursor-pointer"
             >
-              {composedTime}
+              {timeValue + `h`}
             </p>
           )}
         </div>

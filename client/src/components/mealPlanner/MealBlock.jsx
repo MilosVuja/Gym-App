@@ -13,6 +13,8 @@ export default function MealBlock({
   mealId,
   mealName,
   onNameChange,
+  mealTime,
+  onTimeChange,
   onMealTotalChange,
   onDelete,
   onEditIngredient,
@@ -81,7 +83,8 @@ export default function MealBlock({
         mealId={mealId}
         mealName={mealName}
         onNameChange={onNameChange}
-        mealTime="08:00h"
+        mealTime={mealTime}
+        onTimeChange={onTimeChange}
         onDelete={onDelete}
         onAddMeal={onAddMeal}
         toggleFavoriteMeal={toggleFavoriteMeal}
