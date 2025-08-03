@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { addIngredientToMeal } from "../../redux/mealsSlice";
+import { getFullUnitName } from "../../utilities/fullUnitNames";
 
 export default function IngredientPicker() {
   const dispatch = useDispatch();
@@ -88,11 +89,19 @@ export default function IngredientPicker() {
           nf_protein: food.nf_protein,
           nf_total_carbohydrate: food.nf_total_carbohydrate,
           nf_total_fat: food.nf_total_fat,
+          serving_weight_grams: food.serving_weight_grams,
         };
 
-        setSelectedFood(food);
+        setSelectedFood({
+          ...food,
+          nf_calories: food.nf_calories,
+          nf_protein: food.nf_protein,
+          nf_total_carbohydrate: food.nf_total_carbohydrate,
+          nf_total_fat: food.nf_total_fat,
+        });
+
         setSelectedUnitIndex(0);
-        setServingQty(1);
+        setServingQty("1.0");
         setSelectedMeals([]);
       }
     } catch (error) {
@@ -109,22 +118,47 @@ export default function IngredientPicker() {
     const newMeasure = selectedFood.alt_measures?.[newIndex];
     if (!newMeasure) return;
 
+    const unit = newMeasure.measure.toLowerCase();
     const newWeight = newMeasure.serving_weight || 1;
-    const baseWeight = selectedFood.alt_measures?.[0]?.serving_weight || 1;
-    const ratio = newWeight / baseWeight;
+
+    const isGramUnit =
+      unit.toLowerCase().includes("gram") || unit.toLowerCase() === "g";
+    const suggestedQty = isGramUnit ? 100 : 1.0;
 
     const base = originalMacrosRef.current;
 
+    let adjustedCalories, adjustedProtein, adjustedCarbs, adjustedFat;
+
+    if (isGramUnit) {
+      adjustedCalories = Math.round(base.nf_calories * (suggestedQty / 100));
+      adjustedProtein = Math.round(base.nf_protein * (suggestedQty / 100));
+      adjustedCarbs = Math.round(
+        base.nf_total_carbohydrate * (suggestedQty / 100)
+      );
+      adjustedFat = Math.round(base.nf_total_fat * (suggestedQty / 100));
+    } else {
+      const baseWeight = selectedFood.alt_measures?.[0]?.serving_weight || 1;
+      const ratio = newWeight / baseWeight;
+
+      adjustedCalories = Math.round(base.nf_calories * ratio * suggestedQty);
+      adjustedProtein = Math.round(base.nf_protein * ratio * suggestedQty);
+      adjustedCarbs = Math.round(
+        base.nf_total_carbohydrate * ratio * suggestedQty
+      );
+      adjustedFat = Math.round(base.nf_total_fat * ratio * suggestedQty);
+    }
+
     setSelectedFood((prev) => ({
       ...prev,
-      serving_unit: newMeasure.measure,
+      serving_unit: unit,
       serving_weight_grams: newWeight,
-      nf_calories: Math.round(base.nf_calories * ratio),
-      nf_protein: Math.round(base.nf_protein * ratio),
-      nf_total_carbohydrate: Math.round(base.nf_total_carbohydrate * ratio),
-      nf_total_fat: Math.round(base.nf_total_fat * ratio),
+      nf_calories: adjustedCalories,
+      nf_protein: adjustedProtein,
+      nf_total_carbohydrate: adjustedCarbs,
+      nf_total_fat: adjustedFat,
     }));
 
+    setServingQty(isGramUnit ? "100" : "1.0");
     setSelectedUnitIndex(newIndex);
   };
 
@@ -144,8 +178,20 @@ export default function IngredientPicker() {
   };
 
   const getScaledMacro = (val) => {
-    if (!selectedFood) return 0;
-    return Math.round(val * servingQty);
+    if (!selectedFood || !selectedFood.serving_weight_grams) return 0;
+
+    const qtyNum = parseFloat(servingQty) || 1;
+
+    const totalGrams =
+      selectedFood.serving_unit === "g"
+        ? qtyNum
+        : qtyNum * selectedFood.serving_weight_grams;
+
+    const baseGrams = originalMacrosRef.current.serving_weight_grams || 1;
+
+    const raw = (val / baseGrams) * totalGrams;
+
+    return Math.round(raw);
   };
 
   const toggleMealCheckbox = (mealId) => {
@@ -200,30 +246,30 @@ export default function IngredientPicker() {
             onChange={(e) => handleSearchChange(e.target.value)}
           />
 
-          <h2 className="mt-4 font-semibold">Matching foods:</h2>
-
-          <div className="mt-2 max-h-[400px] overflow-auto border rounded p-2 space-y-2">
-            {suggestions.map((item, idx) => (
-              <div
-                key={item.food_name + idx}
-                onClick={() => handleSelectSuggestion(item)}
-                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded flex justify-between items-center"
-              >
-                <div>
-                  <p className="font-semibold truncate max-w-xs">
-                    {item.food_name}
-                  </p>
-                </div>
-                <div className="text-sm text-gray-700 min-w-[120px] text-right">
-                  {item.serving_qty || 1} {item.serving_unit || "unit"}
-                </div>
+          {searchText.length >= 2 && suggestions.length > 0 && (
+            <>
+              <h2 className="mt-4 font-semibold">Matching foods:</h2>
+              <div className="mt-2 max-h-[400px] overflow-auto border rounded p-2 space-y-2">
+                {suggestions.map((item, idx) => (
+                  <div
+                    key={item.food_name + idx}
+                    onClick={() => handleSelectSuggestion(item)}
+                    className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-semibold truncate max-w-xs">
+                        {item.food_name}
+                      </p>
+                    </div>
+                    <div className="text-sm text-gray-700 min-w-[120px] text-right">
+                      {item.serving_qty || 1}{" "}
+                      {getFullUnitName(item.serving_unit || "unit")}
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-
-            {suggestions.length === 0 && searchText.length >= 2 && (
-              <p className="text-gray-600">No matching foods found.</p>
-            )}
-          </div>
+            </>
+          )}
         </div>
         <div
           className="w-96 border rounded p-4 shadow-md flex flex-col gap-4 top-4 h-fit"
@@ -242,7 +288,18 @@ export default function IngredientPicker() {
                   type="number"
                   min="0.1"
                   step="0.1"
-                  value={servingQty}
+                  value={
+                    selectedFood?.serving_unit
+                      ?.toLowerCase()
+                      .includes("gram") ||
+                    selectedFood?.serving_unit?.toLowerCase() === "g"
+                      ? parseFloat(servingQty) === 100
+                        ? "100"
+                        : servingQty % 1 === 0
+                        ? parseInt(servingQty)
+                        : servingQty
+                      : "1.0"
+                  }
                   onChange={handleServingQtyChange}
                   onBlur={handleServingQtyBlur}
                   placeholder="1.0"
@@ -257,10 +314,19 @@ export default function IngredientPicker() {
                 >
                   {selectedFood.alt_measures?.map((measure, idx) => (
                     <option style={{ color: "black" }} key={idx} value={idx}>
-                      {measure.measure}
+                      {getFullUnitName(measure.measure)}
                     </option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 text-center">
+                  {selectedFood.serving_unit === "g"
+                    ? `You're entering ${Math.round(servingQty)} grams`
+                    : `1 ${getFullUnitName(
+                        selectedFood.serving_unit
+                      )} = ${Math.round(selectedFood.serving_weight_grams)}g`}
+                </p>
               </div>
 
               <div className="text-sm text-white font-mono mb-5">
@@ -315,7 +381,7 @@ export default function IngredientPicker() {
             </>
           ) : (
             <div className="text-center text-gray-500 mt-20">
-              <p>Select a ingrdient for the left to see nutrition info!</p>
+              <p>Select a ingrdient from the left to see nutrition info!</p>
             </div>
           )}
         </div>

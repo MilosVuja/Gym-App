@@ -1,4 +1,5 @@
 import { FaMinusCircle } from "react-icons/fa";
+import { getFullUnitName } from "../../utilities/fullUnitNames";
 
 export default function MealIngredients({ ingredient, onDelete, onEdit }) {
   const {
@@ -27,7 +28,7 @@ export default function MealIngredients({ ingredient, onDelete, onEdit }) {
             {name}
             {hasValidQuantity && (
               <span className="text-gray-500">
-                {`, ${quantity}${unit ? unit : ""}`}
+                {`, ${quantity}${unit ? getFullUnitName(unit) : ""}`}
               </span>
             )}
           </p>

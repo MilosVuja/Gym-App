@@ -6,37 +6,35 @@ export default function MacroCard({
   className = "",
 }) {
   return (
-    <div className={` ${className}`}>
-      <h3 className="font-bold text-lg mb-2">{title}</h3>
+    <div className={`text-sm text-white ${className}`}>
+      <h3 className="font-bold text-xl mb-2">{title}</h3>
       {macros && Object.keys(macros).length > 0 ? (
         Object.entries(macros).map(([key, value]) => {
-          const unit = units[key] ?? "g";
+          const unit = units[key] ?? "";
+          const label = key.charAt(0).toUpperCase() + key.slice(1) + ":";
+
           return (
-            <div
-              key={key}
-              className="mb-1 flex justify-between"
-              style={{ maxWidth: "220px" }}
-            >
-              <span>{key.charAt(0).toUpperCase() + key.slice(1)}:</span>
-              <span
+            <div key={key} className="flex gap-2 mb-1 items-baseline">
+              <div className="w-15 text-left">
+                <span>{label}</span>
+              </div>
+              <div
+                className="text-right"
                 style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  minWidth: "70px",
+                  minWidth: "40px",
                   fontVariantNumeric: "tabular-nums",
-                  gap: "4px",
                 }}
               >
-                <span style={{ textAlign: "right", minWidth: "40px", display: "inline-block" }}>
-                  {value}
-                </span>
-                <span>{unit}</span>
-              </span>
+                {value}
+              </div>
+              <div className="text-left min-w-[60px]">{unit}</div>
             </div>
           );
         })
       ) : (
-        <p className="text-sm text-gray-500">{emptyNote ?? "No data available."}</p>
+        <p className="text-sm text-gray-400">
+          {emptyNote ?? "No data available."}
+        </p>
       )}
     </div>
   );

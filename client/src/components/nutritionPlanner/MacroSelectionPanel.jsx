@@ -35,7 +35,7 @@ export default function MacroSelectionPanel({
   return (
     <>
       <div className="flex justify-center gap-6 mb-4">
-        <div className="border rounded p-3 w-48 shadow text-center">
+        <div className="border rounded p-3 w-60 shadow text-center">
           <MacroCard
             title="Current Macros"
             macros={currentMacros ? formatMacros(currentMacros) : null}
@@ -43,7 +43,7 @@ export default function MacroSelectionPanel({
           />
         </div>
 
-        <div className="border rounded p-3 w-48 shadow text-center">
+        <div className="border rounded p-3 w-60 shadow text-center">
           <MacroCard
             title="Adjusted Macros"
             macros={adjustedMacros}

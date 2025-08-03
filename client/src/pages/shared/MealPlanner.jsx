@@ -265,15 +265,15 @@ export default function MealPlanner() {
               </div>
               <div className="flex flex-col items-center text-white p-4 w-20 border-l-4 border-r-1 border-white">
                 <p>Proteins</p>
-                <p>g</p>
+                <p>grams</p>
               </div>
               <div className="flex flex-col items-center text-white p-4 w-20 border-l-4 border-r-1 border-white">
                 <p>Carbs</p>
-                <p>g</p>
+                <p>grams</p>
               </div>
               <div className="flex flex-col items-center text-white p-4 w-20 border-l-4 border-white">
                 <p>Fats</p>
-                <p>g</p>
+                <p>grams</p>
               </div>
             </div>
 

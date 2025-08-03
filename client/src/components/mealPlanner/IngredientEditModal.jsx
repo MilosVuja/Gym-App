@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { IoClose } from "react-icons/io5";
 import axios from "axios";
+import { getFullUnitName } from "../../utilities/fullUnitNames";
 
 export default function IngredientEditModal({
   ingredient,
@@ -157,7 +158,7 @@ export default function IngredientEditModal({
             {(nutritionData?.alt_measures || units).length > 0 ? (
               (nutritionData?.alt_measures || units).map((unit, idx) => (
                 <option key={idx} value={idx}>
-                  {unit.measure}
+                  {getFullUnitName(unit.measure)}
                 </option>
               ))
             ) : (

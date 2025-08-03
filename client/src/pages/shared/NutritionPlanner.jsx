@@ -10,14 +10,17 @@ export default function NutritionPlanner() {
   const [personalInfo, setPersonalInfo] = useState({
     weight: "",
     height: "",
-    gender: "",
+    gender: "male",
+    activity: "sedentary",
+    goal: "lose",
+    age: "",
   });
 
   const units = {
     calories: "kcal",
-    protein: "g",
-    fat: "g",
-    carbs: "g",
+    protein: "grams",
+    fat: "grams",
+    carbs: "grams",
   };
 
   const [errors, setErrors] = useState({});
@@ -204,11 +207,21 @@ export default function NutritionPlanner() {
         setPersonalInfo({
           height: personalData.height ?? "",
           weight: personalData.weight ?? "",
-          gender: personalData.gender ?? "",
+          gender: personalData.gender ?? "male",
+          activity: personalData.activity ?? "sedentary",
+          goal: personalData.goal ?? "lose",
+          age: personalData.age ?? "",
         });
       } catch (error) {
         console.error("Failed to fetch personal info", error);
-        setPersonalInfo({ height: "", weight: "", gender: "" });
+        setPersonalInfo({
+          height: "",
+          weight: "",
+          gender: "male",
+          activity: "sedentary",
+          goal: "lose",
+          age: "",
+        });
       }
     };
 
@@ -372,6 +385,34 @@ export default function NutritionPlanner() {
   const adjustedDayMacros = formatMacros(getAdjustedDayMacros());
 
   const currentMacros = appliedCustomMacros ?? recommendedMacros;
+
+  useEffect(() => {
+    const { weight, height, age, gender, activity, goal } = personalInfo;
+
+    const validWeight = parseFloat(weight) > 20 && parseFloat(weight) < 500;
+    const validHeight = parseFloat(height) >= 100 && parseFloat(height) <= 250;
+    const validAge = parseInt(age) >= 10 && parseInt(age) <= 120;
+    const validGender = gender === "male" || gender === "female";
+    const validActivity = [
+      "sedentary",
+      "light",
+      "moderate",
+      "active",
+      "athlete",
+    ].includes(activity);
+    const validGoal = ["lose", "maintain", "gain"].includes(goal);
+
+    if (
+      validWeight &&
+      validHeight &&
+      validAge &&
+      validGender &&
+      validActivity &&
+      validGoal
+    ) {
+      calculateMacros();
+    }
+  });
 
   function calculateMacros() {
     if (!validatePersonalInfo()) return;
@@ -720,21 +761,6 @@ export default function NutritionPlanner() {
             </label>
           ))}
         </div>
-
-        <button
-          className="mt-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => {
-            if (validatePersonalInfo()) {
-              setDayAdjustments({ protein: 0, fat: 0, carbs: 0 });
-              setAppliedCustomMacros(null);
-              setSelectedMacrosForDay("current");
-              setSelectedMacrosForPeriod("current");
-              calculateMacros();
-            }
-          }}
-        >
-          Calculate
-        </button>
       </div>
 
       {recommendedMacros && (
