@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { FaTrash, FaTrashAlt, FaRegCopy } from "react-icons/fa";
+import { v4 as uuidv4 } from "uuid";
 
 export default function ExerciseModal({
-
   exerciseName,
   videoSrc,
   initialInstructions,
@@ -11,9 +11,7 @@ export default function ExerciseModal({
   onSave,
 }) {
   const [rows, setRows] = useState(
-    initialRows || [
-      { id: Date.now(), reps: 0, weight: 0, rest: 0, dropsets: [] },
-    ]
+    initialRows || [{ id: uuidv4(), reps: 0, weight: 0, rest: 0, dropsets: [] }]
   );
   const [instructions, setInstructions] = useState(initialInstructions || "");
 
@@ -99,15 +97,14 @@ export default function ExerciseModal({
     );
   };
 
-const handleSave = () => {
-  if (onSave) {
-    onSave({ rows, instructions });
-    setTimeout(() => {
-      if (onClose) onClose();
-    }, 0);
-  }
-};
-
+  const handleSave = () => {
+    if (onSave) {
+      onSave({ rows, instructions });
+      setTimeout(() => {
+        if (onClose) onClose();
+      }, 0);
+    }
+  };
 
   const handleDragStart = (e, rowId) => {
     setDraggedId(rowId);

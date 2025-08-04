@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const AchievementsTab = () => {
-  const [achievements, setAchievements] = useState([
+  const [achievements, ] = useState([
     {
       id: 1,
       title: "First Workout",

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { addIngredientToMeal } from "../../redux/mealsSlice";
 import { getFullUnitName } from "../../utilities/fullUnitNames";
+import { v4 as uuidv4 } from "uuid";
 
 export default function IngredientPicker() {
   const dispatch = useDispatch();
@@ -206,7 +207,7 @@ export default function IngredientPicker() {
     if (!selectedFood || servingQty <= 0) return;
 
     const ingredient = {
-      id: Date.now(),
+      id: uuidv4(),
       name: selectedFood.food_name,
       values: [
         getScaledMacro(selectedFood.nf_calories),

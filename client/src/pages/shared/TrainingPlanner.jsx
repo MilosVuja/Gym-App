@@ -5,6 +5,7 @@ import ExerciseModal from "../../components/ExerciseModal";
 import CheckboxDropdown from "../../components/training/MakeYourTraining/CheckboxDropdown";
 import SupersetCard from "../../components/training/MakeYourTraining/SuperSetCard";
 import { FaEdit, FaTrash } from "react-icons/fa";
+import { v4 as uuidv4 } from "uuid";
 
 export default function TrainingPlanner() {
   const [duration, setDuration] = useState("");
@@ -627,7 +628,6 @@ export default function TrainingPlanner() {
       setChosenExercises(savedTraining.exercises || []);
 
       setShowContainers(true);
-
     } catch (error) {
       console.error("Failed to parse saved training", error);
       alert("Failed to load saved training data.");
@@ -1564,7 +1564,7 @@ export default function TrainingPlanner() {
           videoSrc={selectedExercise.videoUrl}
           initialRows={
             exerciseModalsData[selectedExercise._id]?.rows || [
-              { id: Date.now(), reps: 0, weight: 0, rest: 0, dropsets: [] },
+              { id: uuidv4(), reps: 0, weight: 0, rest: 0, dropsets: [] },
             ]
           }
           initialInstructions={selectedExercise.instructions || ""}

@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+import { v4 as uuidv4 } from "uuid";
 
 import TotalMacros from "../../components/mealPlanner/TotalMacros";
 import DatePicker from "react-datepicker";
@@ -158,7 +159,7 @@ export default function MealPlanner() {
 
   const handleAddMeal = (insertIndex) => {
     const newMeal = {
-      id: Date.now(),
+      id: uuidv4(),
       time: "08:00h",
       ingredients: [],
     };
