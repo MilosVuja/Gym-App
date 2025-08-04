@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { addIngredientToMeal } from "../../redux/mealsSlice";
@@ -29,38 +29,44 @@ export default function IngredientPicker() {
     nf_total_fat: 0,
   });
 
-  const handleSearchChange = async (text) => {
-    setSearchText(text);
-    setSelectedFood(null);
-    if (text.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://trackapi.nutritionix.com/v2/search/instant?query=${encodeURIComponent(
-          text
-        )}`,
-        {
-          headers: {
-            "x-app-id": import.meta.env.VITE_NUTRITIONIX_APP_ID,
-            "x-app-key": import.meta.env.VITE_NUTRITIONIX_APP_KEY,
-            "Content-Type": "application/json",
-          },
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      const fetchSuggestions = async () => {
+        if (searchText.length < 2) {
+          setSuggestions([]);
+          return;
         }
-      );
 
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
+        try {
+          const response = await fetch(
+            `https://trackapi.nutritionix.com/v2/search/instant?query=${encodeURIComponent(
+              searchText
+            )}`,
+            {
+              headers: {
+                "x-app-id": import.meta.env.VITE_NUTRITIONIX_APP_ID,
+                "x-app-key": import.meta.env.VITE_NUTRITIONIX_APP_KEY,
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
-      const data = await response.json();
-      setSuggestions(data.common || []);
-    } catch (error) {
-      console.error("NutritionX search failed:", error);
-      setSuggestions([]);
-    }
-  };
+          if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
+
+          const data = await response.json();
+          setSuggestions(data.common || []);
+        } catch (error) {
+          console.error("NutritionX search failed:", error);
+          setSuggestions([]);
+        }
+      };
+
+      fetchSuggestions();
+    }, 400);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchText]);
 
   const fetchNutritionDetails = async (foodName) => {
     try {
@@ -244,7 +250,7 @@ export default function IngredientPicker() {
             className="w-full border p-2 rounded"
             placeholder="Search for ingredient..."
             value={searchText}
-            onChange={(e) => handleSearchChange(e.target.value)}
+            onChange={(e) => setSearchText(e.target.value)}
           />
 
           {searchText.length >= 2 && suggestions.length > 0 && (
@@ -253,19 +259,11 @@ export default function IngredientPicker() {
               <div className="mt-2 max-h-[400px] overflow-auto border rounded p-2 space-y-2">
                 {suggestions.map((item, idx) => (
                   <div
-                    key={item.food_name + idx}
+                    key={item.tag_id || item.food_id || idx}
                     onClick={() => handleSelectSuggestion(item)}
                     className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded flex justify-between items-center"
                   >
-                    <div>
-                      <p className="font-semibold truncate max-w-xs">
-                        {item.food_name}
-                      </p>
-                    </div>
-                    <div className="text-sm text-gray-700 min-w-[120px] text-right">
-                      {item.serving_qty || 1}{" "}
-                      {getFullUnitName(item.serving_unit || "unit")}
-                    </div>
+                    ...
                   </div>
                 ))}
               </div>
