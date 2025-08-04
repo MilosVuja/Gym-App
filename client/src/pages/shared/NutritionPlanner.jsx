@@ -139,17 +139,6 @@ export default function NutritionPlanner() {
   }, []);
 
   useEffect(() => {
-    if (!periodStartDate) return;
-
-    const minEnd = dayjs(periodStartDate).add(1, "day");
-    const currentEnd = dayjs(periodEndDate);
-
-    if (!periodEndDate || currentEnd.isBefore(minEnd)) {
-      setPeriodEndDate(minEnd.format("YYYY-MM-DD"));
-    }
-  }, [periodEndDate, periodStartDate]);
-
-  useEffect(() => {
     const planData = {
       personalInfo,
       recommendedMacros,
@@ -280,13 +269,13 @@ export default function NutritionPlanner() {
 
     if (customInput.proteinPerKg !== "") {
       if (isNaN(protein) || protein < 0 || protein > 4) {
-        newErrors.proteinPerKg = "Protein intake must be 0 to 4 g/kg.";
+        newErrors.proteinPerKg = "Protein intake must be 0 to 4 gr/kg.";
       }
     }
 
     if (customInput.fatPerKg !== "") {
       if (isNaN(fat) || fat < 0 || fat > 2.5) {
-        newErrors.fatPerKg = "Fat intake must be 0 to 2.5 g/kg.";
+        newErrors.fatPerKg = "Fat intake must be 0 to 2.5 gr/kg.";
       }
     }
 
@@ -574,437 +563,442 @@ export default function NutritionPlanner() {
   };
 
   return (
-    <div className="p-6 max-w-5xl mx-auto border rounded-xl shadow-md space-y-6">
+    <div className="p-6 max-w-7xl mx-auto border rounded-xl shadow-md space-y-6">
       <h2 className="text-2xl font-bold text-center">Nutrition Calculator</h2>
 
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold">Personal Info</h3>
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="w-full lg:w-1/2 space-y-4">
+          <h3 className="text-lg font-semibold">Personal Info</h3>
+          <div className="flex gap-4">
+            <label>
+              <input
+                type="radio"
+                name="gender"
+                value="male"
+                checked={personalInfo.gender === "male"}
+                onChange={handleChange}
+              />
+              <span className="ml-1">Male</span>
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="gender"
+                value="female"
+                checked={personalInfo.gender === "female"}
+                onChange={handleChange}
+              />
+              <span className="ml-1">Female</span>
+            </label>
+          </div>
 
-        <div className="flex gap-4">
-          <label>
-            <input
-              type="radio"
-              name="gender"
-              value="male"
-              checked={personalInfo.gender === "male"}
-              onChange={handleChange}
-            />
-            <span className="ml-1">Male</span>
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="gender"
-              value="female"
-              checked={personalInfo.gender === "female"}
-              onChange={handleChange}
-            />
-            <span className="ml-1">Female</span>
-          </label>
-        </div>
-
-        <div className="flex gap-6">
-          <label className="flex flex-col">
-            Height (cm)
-            <input
-              type="number"
-              name="height"
-              value={personalInfo.height || ""}
-              onChange={(e) =>
-                setPersonalInfo({ ...personalInfo, height: e.target.value })
-              }
-              onBlur={(e) => {
-                const value = e.target.value;
-                if (!value) {
-                  setErrors((prev) => ({
-                    ...prev,
-                    height: "Height is required",
-                  }));
-                } else if (value < 100 || value > 250) {
-                  setErrors((prev) => ({
-                    ...prev,
-                    height: "Height must be between 100–250",
-                  }));
-                } else {
-                  setErrors((prev) => {
-                    const { ...rest } = prev;
-                    return rest;
-                  });
+          <div className="flex gap-6">
+            <label className="flex flex-col">
+              Height (cm)
+              <input
+                type="number"
+                name="height"
+                value={personalInfo.height || ""}
+                onChange={(e) =>
+                  setPersonalInfo({ ...personalInfo, height: e.target.value })
                 }
-              }}
-              className={`border p-1 rounded ${
-                errors.height ? "border-red-500" : ""
-              }`}
-            />
-            {errors.height && (
-              <span className="text-xs text-red-600 mt-1">{errors.height}</span>
-            )}
-          </label>
-          <label className="flex flex-col">
-            Weight (kg)
-            <input
-              type="number"
-              name="Weight"
-              value={personalInfo.weight || ""}
-              onChange={(e) =>
-                setPersonalInfo({ ...personalInfo, weight: e.target.value })
-              }
-              onBlur={(e) => {
-                const value = e.target.value;
-                if (!value) {
-                  setErrors((prev) => ({
-                    ...prev,
-                    weight: "Weight is required",
-                  }));
-                } else if (value < 20 || value > 200) {
-                  setErrors((prev) => ({
-                    ...prev,
-                    weight: "Weight must be between 20–200",
-                  }));
-                } else {
-                  setErrors((prev) => {
-                    const { ...rest } = prev;
-                    return rest;
-                  });
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  if (!value) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      height: "Height is required",
+                    }));
+                  } else if (value < 100 || value > 250) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      height: "Height must be between 100–250",
+                    }));
+                  } else {
+                    setErrors((prev) => {
+                      const { ...rest } = prev;
+                      return rest;
+                    });
+                  }
+                }}
+                className={`border p-1 rounded ${
+                  errors.height ? "border-red-500" : ""
+                }`}
+              />
+              {errors.height && (
+                <span className="text-xs text-red-600 mt-1">
+                  {errors.height}
+                </span>
+              )}
+            </label>
+            <label className="flex flex-col">
+              Weight (kg)
+              <input
+                type="number"
+                name="Weight"
+                value={personalInfo.weight || ""}
+                onChange={(e) =>
+                  setPersonalInfo({ ...personalInfo, weight: e.target.value })
                 }
-              }}
-              className={`border p-1 rounded ${
-                errors.weight ? "border-red-500" : ""
-              }`}
-            />
-            {errors.weight && (
-              <span className="text-xs text-red-600 mt-1">{errors.weight}</span>
-            )}
-          </label>
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  if (!value) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      weight: "Weight is required",
+                    }));
+                  } else if (value < 20 || value > 200) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      weight: "Weight must be between 20–200",
+                    }));
+                  } else {
+                    setErrors((prev) => {
+                      const { ...rest } = prev;
+                      return rest;
+                    });
+                  }
+                }}
+                className={`border p-1 rounded ${
+                  errors.weight ? "border-red-500" : ""
+                }`}
+              />
+              {errors.weight && (
+                <span className="text-xs text-red-600 mt-1">
+                  {errors.weight}
+                </span>
+              )}
+            </label>
 
-          <label className="flex flex-col">
-            Age
-            <input
-              type="number"
-              name="age"
-              value={personalInfo.age || ""}
-              onChange={(e) =>
-                setPersonalInfo({ ...personalInfo, age: e.target.value })
-              }
-              onBlur={(e) => {
-                const value = e.target.value;
-                if (!value) {
-                  setErrors((prev) => ({ ...prev, age: "Age is required" }));
-                } else if (value < 10 || value > 120) {
-                  setErrors((prev) => ({
-                    ...prev,
-                    age: "Age must be between 10–120",
-                  }));
-                } else {
-                  setErrors((prev) => {
-                    const { ...rest } = prev;
-                    return rest;
-                  });
+            <label className="flex flex-col">
+              Age
+              <input
+                type="number"
+                name="age"
+                value={personalInfo.age || ""}
+                onChange={(e) =>
+                  setPersonalInfo({ ...personalInfo, age: e.target.value })
                 }
-              }}
-              className={`border p-1 rounded ${
-                errors.age ? "border-red-500" : ""
-              }`}
-            />
-            {errors.age && (
-              <span className="text-xs text-red-600 mt-1">{errors.age}</span>
-            )}
-          </label>
-        </div>
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  if (!value) {
+                    setErrors((prev) => ({ ...prev, age: "Age is required" }));
+                  } else if (value < 10 || value > 120) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      age: "Age must be between 10–120",
+                    }));
+                  } else {
+                    setErrors((prev) => {
+                      const { ...rest } = prev;
+                      return rest;
+                    });
+                  }
+                }}
+                className={`border p-1 rounded ${
+                  errors.age ? "border-red-500" : ""
+                }`}
+              />
+              {errors.age && (
+                <span className="text-xs text-red-600 mt-1">{errors.age}</span>
+              )}
+            </label>
+          </div>
 
-        <div>
-          <p className="font-semibold">Activity Level:</p>
-          {["sedentary", "light", "moderate", "active", "athlete"].map(
-            (lvl) => (
-              <label key={lvl} className="block">
+          <div>
+            <p className="font-semibold">Activity Level:</p>
+            {["sedentary", "light", "moderate", "active", "athlete"].map(
+              (lvl) => (
+                <label key={lvl} className="block">
+                  <input
+                    type="radio"
+                    name="activity"
+                    value={lvl}
+                    checked={personalInfo.activity === lvl}
+                    onChange={handleChange}
+                  />
+                  <span className="ml-1 capitalize">
+                    {
+                      {
+                        sedentary: "Sedentary (little/no exercise)",
+                        light: "Lightly Active (1–2 days/week)",
+                        moderate: "Moderately Active (3–5 days/week)",
+                        active: "Very Active (6–7 days/week)",
+                        athlete: "Athlete / Twice Daily Training",
+                      }[lvl]
+                    }
+                  </span>
+                </label>
+              )
+            )}
+          </div>
+
+          <div>
+            <p className="font-semibold">Goal:</p>
+            {["lose", "maintain", "gain"].map((goal) => (
+              <label key={goal} className="mr-4">
                 <input
                   type="radio"
-                  name="activity"
-                  value={lvl}
-                  checked={personalInfo.activity === lvl}
+                  name="goal"
+                  value={goal}
+                  checked={personalInfo.goal === goal}
                   onChange={handleChange}
                 />
                 <span className="ml-1 capitalize">
-                  {
-                    {
-                      sedentary: "Sedentary (little/no exercise)",
-                      light: "Lightly Active (1–2 days/week)",
-                      moderate: "Moderately Active (3–5 days/week)",
-                      active: "Very Active (6–7 days/week)",
-                      athlete: "Athlete / Twice Daily Training",
-                    }[lvl]
-                  }
+                  {goal === "lose"
+                    ? "Lose Fat"
+                    : goal === "maintain"
+                    ? "Maintain"
+                    : "Gain Muscle"}
                 </span>
               </label>
-            )
+            ))}
+          </div>
+        </div>
+        <div className="w-full lg:w-1/2 space-y-6 mt-6">
+          {recommendedMacros && (
+            <>
+              <div className="flex flex-col lg:flex-row w-full border rounded shadow-sm overflow-hidden">
+                <MacroCard
+                  title="Recommended Macros"
+                  macros={recommendedMacros}
+                  className="flex flex-col items-center shadow text-center w-full lg:w-1/2 p-4 border-b lg:border-b-0 lg:border-r"
+                />
+                <MacroCard
+                  title="Customized Macros"
+                  macros={appliedCustomMacros}
+                  className="flex flex-col items-center shadow text-center w-full lg:w-1/2 p-4"
+                  emptyNote="To customize, input values below and click Apply."
+                />
+              </div>
+              <div className="w-full border p-6 rounded">
+                <h3 className="font-bold text-lg mb-4 text-center">
+                  Customize Macro Intake
+                </h3>
+                {errors.kcalLimit && (
+                  <p className="text-red-500 text-center text-sm mt-1">
+                    {errors.kcalLimit}
+                  </p>
+                )}
+
+                <div className="flex flex-col max-w-xl mx-auto p-4 rounded-lg">
+                  <div className="mb-3 text-center">
+                    <label
+                      htmlFor="proteinPerKg"
+                      className="block text-sm font-semibold mb-1"
+                    >
+                      Protein Intake (gr/kg)
+                    </label>
+                    <input
+                      id="proteinPerKg"
+                      type="number"
+                      name="proteinPerKg"
+                      min="0"
+                      max="4"
+                      step="0.1"
+                      value={customInput.proteinPerKg}
+                      onChange={handleCustomChange}
+                      aria-describedby="proteinHelp"
+                      className={`border p-1 px-2 text-xs rounded w-1/3 mx-auto text-center ${
+                        errors.proteinPerKg ? "border-red-500" : ""
+                      }`}
+                    />
+                    <div
+                      id="proteinHelp"
+                      className="text-xs text-gray-500 mt-1"
+                    >
+                      <p>Recommended: 1.6–2.4</p>
+                    </div>
+                    {errors.proteinPerKg && (
+                      <span className="text-xs text-red-600 mt-1">
+                        {errors.proteinPerKg}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mb-4 text-center">
+                    <label
+                      htmlFor="fatPerKg"
+                      className="block text-sm font-semibold mb-1"
+                    >
+                      Fat Intake (gr/kg)
+                    </label>
+                    <input
+                      id="fatPerKg"
+                      type="number"
+                      name="fatPerKg"
+                      min="0"
+                      max="2.5"
+                      step="0.1"
+                      value={customInput.fatPerKg}
+                      onChange={handleCustomChange}
+                      aria-describedby="fatHelp"
+                      className={`border p-1 px-2 text-xs rounded w-1/3 mx-auto text-center ${
+                        errors.fatPerKg ? "border-red-500" : ""
+                      }`}
+                    />
+                    <div id="fatHelp" className="text-xs text-gray-500 mt-1">
+                      <p>Recommended: 0.7–1.0</p>
+                    </div>
+                    {errors.fatPerKg && (
+                      <span className="text-xs text-red-600 mt-1">
+                        {errors.fatPerKg}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (validateCustomInput()) {
+                        applyCustomMacros();
+                      }
+                    }}
+                    className="w-1/2 mx-auto bg-green-600 text-white py-1 rounded hover:bg-green-700 text-sm"
+                    aria-label="Apply customized macros"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
+      </div>
+      <div className="flex flex-col items-center border p-6 rounded space-y-6">
+        <h3 className="text-xl font-semibold text-center mb-4">
+          Assign Plan Period
+        </h3>
 
-        <div>
-          <p className="font-semibold">Goal:</p>
-          {["lose", "maintain", "gain"].map((goal) => (
-            <label key={goal} className="mr-4">
+        <div className="flex justify-center gap-8 mb-6">
+          {["day", "period"].map((period) => (
+            <label key={period} className="cursor-pointer">
               <input
                 type="radio"
-                name="goal"
-                value={goal}
-                checked={personalInfo.goal === goal}
-                onChange={handleChange}
+                name="assignPeriod"
+                value={period}
+                checked={assignPeriod === period}
+                onChange={handleAssignPeriodChange}
+                className="mr-1"
               />
-              <span className="ml-1 capitalize">
-                {goal === "lose"
-                  ? "Lose Fat"
-                  : goal === "maintain"
-                  ? "Maintain"
-                  : "Gain Muscle"}
+              <span className="capitalize">
+                {period === "day" ? "By Day" : "By Custom Period"}
               </span>
             </label>
           ))}
         </div>
-      </div>
 
-      {recommendedMacros && (
-        <div className="w-full space-y-6">
-          <div className="flex w-full border rounded shadow-sm overflow-hidden">
-            <MacroCard
-              title="Recommended Macros"
-              macros={recommendedMacros}
-              units={units}
-              className="flex flex-col items-center shadow text-center w-1/2 p-4 border-r"
-            />
-            <MacroCard
-              title="Customized Macros"
-              macros={appliedCustomMacros}
-              units={units}
-              className="flex flex-col items-center shadow text-center w-1/2 p-4 border-r"
-              emptyNote="To customize, input values below and click Apply."
-            />
-          </div>
-          <div className="w-full border p-6 rounded -mt-px">
-            <h3 className="font-bold text-lg mb-4 text-center">
-              Customize Macro intake
-            </h3>
-            {errors.kcalLimit && (
-              <p className="text-red-500 text-center text-sm mt-1">
-                {errors.kcalLimit}
-              </p>
-            )}
+        {assignPeriod === "day" && (
+          <div>
+            <div className="flex justify-center gap-6 mb-4 text-black">
+              {weekDays.map(({ dayName, date }, index) => (
+                <div key={dayName} className="flex flex-col items-center">
+                  <button
+                    onClick={() => handleDaySelect(index)}
+                    className={`border rounded px-3 py-1 text-sm ${
+                      index === selectedDayIndex
+                        ? "bg-blue-600"
+                        : "bg-gray-100 hover:bg-gray-200"
+                    }`}
+                  >
+                    {dayName}
+                    <br />
+                    <span className="text-xs font-normal text-gray-600">
+                      {date.toLocaleDateString()}
+                    </span>
+                  </button>
 
-            <div className="flex flex-col max-w-xl mx-auto p-4 rounded-lg">
-              <div className="mb-3 text-center">
-                <label
-                  htmlFor="proteinPerKg"
-                  className="block text-sm font-semibold mb-1"
-                >
-                  Protein Intake (g/kg)
-                </label>
-                <input
-                  id="proteinPerKg"
-                  type="number"
-                  name="proteinPerKg"
-                  min="0"
-                  max="4"
-                  step="0.1"
-                  value={customInput.proteinPerKg}
-                  onChange={handleCustomChange}
-                  aria-describedby="proteinHelp"
-                  className={`border p-1 px-2 text-xs rounded w-1/3 mx-auto text-center ${
-                    errors.proteinPerKg ? "border-red-500" : ""
-                  }`}
-                />
-                <div id="proteinHelp" className="text-xs text-gray-500 mt-1">
-                  <p>Recommended: 1.6–2.4</p>
+                  {assignedPlanByDay[index] && (
+                    <div className="mt-2 w-full max-w-xs">
+                      <MacroCard
+                        macros={assignedPlanByDay[index]}
+                        className="border gap-2 rounded px-3 text-xs text-center shadow-sm"
+                      />
+                    </div>
+                  )}
                 </div>
-                {errors.proteinPerKg && (
-                  <span className="text-xs text-red-600 mt-1">
-                    {errors.proteinPerKg}
-                  </span>
-                )}
-              </div>
-              <div className="mb-4 text-center">
-                <label
-                  htmlFor="fatPerKg"
-                  className="block text-sm font-semibold mb-1"
-                >
-                  Fat Intake (g/kg)
-                </label>
-                <input
-                  id="fatPerKg"
-                  type="number"
-                  name="fatPerKg"
-                  min="0"
-                  max="2.5"
-                  step="0.1"
-                  value={customInput.fatPerKg}
-                  onChange={handleCustomChange}
-                  aria-describedby="fatHelp"
-                  className={`border p-1 px-2 text-xs rounded w-1/3 mx-auto text-center ${
-                    errors.fatPerKg ? "border-red-500" : ""
-                  }`}
-                />
-                <div id="fatHelp" className="text-xs text-gray-500 mt-1">
-                  <p>Recommended: 0.7–1.0</p>
-                </div>
-                {errors.fatPerKg && (
-                  <span className="text-xs text-red-600 mt-1">
-                    {errors.fatPerKg}
-                  </span>
-                )}
-              </div>
-
-              <button
-                onClick={() => {
-                  if (validateCustomInput()) {
-                    applyCustomMacros();
-                  }
-                }}
-                className="w-1/2 mx-auto bg-green-600 text-white py-1 rounded hover:bg-green-700 text-sm"
-                aria-label="Apply customized macros"
-              >
-                Apply
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-col items-center border p-6 rounded space-y-6">
-            <h3 className="text-xl font-semibold text-center mb-4">
-              Assign Plan Period
-            </h3>
-
-            <div className="flex justify-center gap-8 mb-6">
-              {["day", "period"].map((period) => (
-                <label key={period} className="cursor-pointer">
-                  <input
-                    type="radio"
-                    name="assignPeriod"
-                    value={period}
-                    checked={assignPeriod === period}
-                    onChange={handleAssignPeriodChange}
-                    className="mr-1"
-                  />
-                  <span className="capitalize">
-                    {period === "day" ? "By Day" : "By Custom Period"}
-                  </span>
-                </label>
               ))}
             </div>
 
-            {assignPeriod === "day" && (
-              <div>
-                <div className="flex justify-center gap-6 mb-4 text-black">
-                  {weekDays.map(({ dayName, date }, index) => (
-                    <div key={dayName} className="flex flex-col items-center">
-                      <button
-                        onClick={() => handleDaySelect(index)}
-                        className={`border rounded px-3 py-1 text-sm ${
-                          index === selectedDayIndex
-                            ? "bg-blue-600"
-                            : "bg-gray-100 hover:bg-gray-200"
-                        }`}
-                      >
-                        {dayName}
-                        <br />
-                        <span className="text-xs font-normal text-gray-600">
-                          {date.toLocaleDateString()}
-                        </span>
-                      </button>
+            <MacroSelectionPanel
+              mode="day"
+              currentMacros={currentMacros}
+              adjustedMacros={adjustedDayMacros}
+              dayAdjustments={dayAdjustments}
+              setDayAdjustments={setDayAdjustments}
+              selectedMacros={selectedMacrosForDay}
+              handleSelectedMacrosChange={handleSelectedMacrosForDay}
+              handleDayAdjustmentChange={handleDayAdjustmentChange}
+              units={units}
+              formatMacros={formatMacros}
+            />
+          </div>
+        )}
 
-                      {assignedPlanByDay[index] && (
-                        <MacroCard
-                          macros={assignedPlanByDay[index]}
-                          units={units}
-                          className="mt-2 border rounded px-3 text-xs bg-gray-50 text-center shadow-sm"
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <MacroSelectionPanel
-                  mode="day"
-                  currentMacros={currentMacros}
-                  adjustedMacros={adjustedDayMacros}
-                  dayAdjustments={dayAdjustments}
-                  setDayAdjustments={setDayAdjustments}
-                  selectedMacros={selectedMacrosForDay}
-                  handleSelectedMacrosChange={handleSelectedMacrosForDay}
-                  handleDayAdjustmentChange={handleDayAdjustmentChange}
-                  units={units}
-                  formatMacros={formatMacros}
+        {assignPeriod === "period" && (
+          <div className="max-w-lg mx-auto space-y-4">
+            <div className="flex justify-center gap-6 items-center">
+              <label className="cursor-pointer flex flex-col items-center">
+                Start Date
+                <input
+                  type="date"
+                  name="periodStart"
+                  value={periodStartDate}
+                  onChange={(e) => setPeriodStartDate(e.target.value)}
+                  className="border rounded p-1"
                 />
-              </div>
-            )}
+              </label>
 
-            {assignPeriod === "period" && (
-              <div className="max-w-lg mx-auto space-y-4">
-                <div className="flex justify-center gap-6 items-center">
-                  <label className="cursor-pointer flex flex-col items-center">
-                    Start Date
-                    <input
-                      type="date"
-                      name="periodStart"
-                      value={periodStartDate}
-                      onChange={(e) => setPeriodStartDate(e.target.value)}
-                      className="border rounded p-1"
-                    />
-                  </label>
-
-                  <label className="cursor-pointer flex flex-col items-center">
-                    End Date
-                    <input
-                      type="date"
-                      name="periodEnd"
-                      value={periodEndDate}
-                      onChange={(e) => {
-                        if (
-                          new Date(e.target.value) >= new Date(periodStartDate)
-                        ) {
-                          setPeriodEndDate(e.target.value);
-                        }
-                      }}
-                      className="border rounded p-1"
-                    />
-                  </label>
-                </div>
-
-                <div className="text-center font-semibold">
-                  Plan Duration: {formatDateLong(periodStartDate)} –{" "}
-                  {formatDateLong(periodEndDate)}
-                </div>
-                <MacroSelectionPanel
-                  mode="period"
-                  currentMacros={currentMacros}
-                  adjustedMacros={adjustedPeriodMacros}
-                  periodAdjustments={periodAdjustments}
-                  setPeriodAdjustments={setPeriodAdjustments}
-                  selectedMacros={selectedMacrosForPeriod}
-                  handleSelectedMacrosChange={handleSelectedMacrosForPeriod}
-                  handlePeriodAdjustmentChange={handlePeriodAdjustmentChange}
-                  units={units}
-                  formatMacros={formatMacros}
+              <label className="cursor-pointer flex flex-col items-center">
+                End Date
+                <input
+                  type="date"
+                  name="periodEnd"
+                  value={periodEndDate}
+                  onChange={(e) => {
+                    if (new Date(e.target.value) >= new Date(periodStartDate)) {
+                      setPeriodEndDate(e.target.value);
+                    }
+                  }}
+                  className="border rounded p-1"
                 />
-              </div>
-            )}
-
-            <div className="text-center">
-              <button
-                onClick={handleAssignPlan}
-                className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 items-center"
-              >
-                Assign Macros
-              </button>
+              </label>
             </div>
+
+            <div className="text-center font-semibold">
+              Plan Duration: {formatDateLong(periodStartDate)} –{" "}
+              {formatDateLong(periodEndDate)}
+            </div>
+            <MacroSelectionPanel
+              mode="period"
+              currentMacros={currentMacros}
+              adjustedMacros={adjustedPeriodMacros}
+              periodAdjustments={periodAdjustments}
+              setPeriodAdjustments={setPeriodAdjustments}
+              selectedMacros={selectedMacrosForPeriod}
+              handleSelectedMacrosChange={handleSelectedMacrosForPeriod}
+              handlePeriodAdjustmentChange={handlePeriodAdjustmentChange}
+              units={units}
+              formatMacros={formatMacros}
+            />
           </div>
-          <div className="flex justify-end text-center">
-            <button
-              onClick={handleSaveAndNavigate}
-              className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-end"
-            >
-              Go to meals
-            </button>
-          </div>
+        )}
+
+        <div className="text-center">
+          <button
+            onClick={handleAssignPlan}
+            className="mt-4 px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 items-center"
+          >
+            Assign Macros
+          </button>
         </div>
-      )}
+      </div>
+      <div className="flex justify-end text-center">
+        <button
+          onClick={handleSaveAndNavigate}
+          className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-end"
+        >
+          Go to meals
+        </button>
+      </div>
     </div>
   );
 }

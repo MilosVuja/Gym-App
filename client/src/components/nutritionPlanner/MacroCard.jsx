@@ -1,7 +1,6 @@
 export default function MacroCard({
   title,
   macros,
-  units = {},
   emptyNote = null,
   className = "",
 }) {
@@ -10,11 +9,10 @@ export default function MacroCard({
       <h3 className="font-bold text-xl mb-2">{title}</h3>
       {macros && Object.keys(macros).length > 0 ? (
         Object.entries(macros).map(([key, value]) => {
-          const unit = units[key] ?? "";
           const label = key.charAt(0).toUpperCase() + key.slice(1) + ":";
 
           return (
-            <div key={key} className="flex gap-2 mb-1 items-baseline">
+            <div key={key} className="flex justify-between mb-1 items-baseline">
               <div className="w-15 text-left">
                 <span>{label}</span>
               </div>
@@ -27,7 +25,6 @@ export default function MacroCard({
               >
                 {value}
               </div>
-              <div className="text-left min-w-[60px]">{unit}</div>
             </div>
           );
         })
