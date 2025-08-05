@@ -36,8 +36,8 @@ const macroAssignmentSchema = new mongoose.Schema(
     },
 
     customIntake: {
-      proteinPerKg: Number,
-      fatPerKg: Number,
+      proteinPerKg: { type: Number, default: 0 },
+      fatPerKg: { type: Number, default: 0 },
     },
 
     customizedMacros: {
@@ -50,6 +50,7 @@ const macroAssignmentSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
+      enum: ["standard", "custom", "adjusted"],
     },
 
     adjustedMacros: {
@@ -61,16 +62,16 @@ const macroAssignmentSchema = new mongoose.Schema(
 
     macroAdjustments: {
       protein: {
-        reduced: Boolean,
-        difference: Number,
+        reduced: { type: Boolean, default: false },
+        difference: { type: Number, default: 0 },
       },
       carbs: {
-        reduced: Boolean,
-        difference: Number,
+        reduced: { type: Boolean, default: false },
+        difference: { type: Number, default: 0 },
       },
       fat: {
-        reduced: Boolean,
-        difference: Number,
+        reduced: { type: Boolean, default: false },
+        difference: { type: Number, default: 0 },
       },
     },
 
@@ -96,5 +97,6 @@ const macroAssignmentSchema = new mongoose.Schema(
 );
 
 macroAssignmentSchema.index({ memberId: 1 });
+macroAssignmentSchema.index({ "days.date": 1 });
 
 module.exports = mongoose.model("MacroAssignment", macroAssignmentSchema);

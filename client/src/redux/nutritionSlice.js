@@ -1,132 +1,127 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-function calculateAdjustedMacros(baseMacros, adjustments) {
-  if (!baseMacros) return null;
-  const protein = (baseMacros.protein || 0) + (adjustments.protein || 0);
-  const carbs = (baseMacros.carbs || 0) + (adjustments.carbs || 0);
-  const fat = (baseMacros.fat || 0) + (adjustments.fat || 0);
-
-  const calories = protein * 4 + carbs * 4 + fat * 9;
-
-  return {
-    calories: Math.max(0, Math.round(calories)),
-    protein: Math.max(0, Math.round(protein)),
-    carbs: Math.max(0, Math.round(carbs)),
-    fat: Math.max(0, Math.round(fat)),
-  };
-}
-
 const initialState = {
   personalInfo: {
-    weight: null,
-    height: null,
-    age: null,
-    gender: "",
-    activityLevel: "",
-    goal: "",
+    gender: "male",
+    height: "",
+    weight: "",
+    age: "",
+    activity: "sedentary",
+    goal: "lose",
   },
-  recommendedMacros: {
-    calories: null,
-    protein: null,
-    carbs: null,
-    fat: null,
+  recommendedMacros: null,
+  customInput: {
+    proteinPerKg: "",
+    fatPerKg: "",
   },
-  customizedInput: {
-    proteinPerKg: null,
-    fatPerKg: null,
-  },
-  customizedMacros: {
-    calories: null,
-    protein: null,
-    carbs: null,
-    fat: null,
-  },
-  adjustments: {
+  appliedCustomMacros: null,
+  assignPeriod: "day",
+  selectedDayIndex: 0,
+  selectedMacrosForDay: "current",
+  selectedMacrosForPeriod: "current",
+  periodStartDate: null,
+  periodEndDate: null,
+  dayAdjustments: {
     protein: 0,
     carbs: 0,
     fat: 0,
   },
-  adjustedMacros: {
-    calories: null,
-    protein: null,
-    carbs: null,
-    fat: null,
+  periodAdjustments: {
+    protein: 0,
+    carbs: 0,
+    fat: 0,
   },
-  mode: "recommended",
-  assignedMacrosByDay: {
-  },
+  assignedPlanByDay: {},
+  assignedPlan: null,
+  weekDays: [],
+  errors: {},
 };
 
 const nutritionSlice = createSlice({
   name: "nutrition",
   initialState,
   reducers: {
-    updatePersonalInfo(state, action) {
-      state.personalInfo = { ...state.personalInfo, ...action.payload };
-    },
-    setRecommendedMacros(state, action) {
-      state.recommendedMacros = action.payload;
-
-      if (state.mode === "recommended" || state.mode === "adjusted") {
-        state.adjustedMacros = calculateAdjustedMacros(
-          action.payload,
-          state.adjustments
-        );
-      }
-    },
-    setCustomizedInput(state, action) {
-      state.customizedInput = { ...state.customizedInput, ...action.payload };
-    },
-    setCustomizedMacros(state, action) {
-      state.customizedMacros = action.payload;
-
-      if (state.mode === "customized" || state.mode === "adjusted") {
-        state.adjustedMacros = calculateAdjustedMacros(
-          action.payload,
-          state.adjustments
-        );
-      }
-    },
-    setAdjustments(state, action) {
-      state.adjustments = action.payload;
-
-      if (state.mode === "adjusted") {
-        const baseMacros =
-          state.mode === "customized"
-            ? state.customizedMacros
-            : state.recommendedMacros;
-        state.adjustedMacros = calculateAdjustedMacros(
-          baseMacros,
-          action.payload
-        );
-      }
-    },
-    setMode(state, action) {
-      state.mode = action.payload;
-    },
-    assignMacrosToDay(state, action) {
-      const { dayIndex, base, adjustments, adjustedMacros } = action.payload;
-      state.assignedMacrosByDay[dayIndex] = {
-        base,
-        adjustments,
-        adjustedMacros,
+    setPersonalInfo(state, action) {
+      state.personalInfo = {
+        ...state.personalInfo,
+        ...action.payload,
       };
     },
-    resetNutritionState(state) {
-      Object.assign(state, initialState);
+
+    setRecommendedMacros(state, action) {
+      state.recommendedMacros = action.payload;
+    },
+    setCustomInput(state, action) {
+      const { name, value } = action.payload;
+      state.customInput[name] = value;
+    },
+    setAppliedCustomMacros(state, action) {
+      state.appliedCustomMacros = action.payload;
+    },
+    setAssignPeriod(state, action) {
+      state.assignPeriod = action.payload;
+    },
+    setSelectedDayIndex(state, action) {
+      state.selectedDayIndex = action.payload;
+    },
+    setSelectedMacrosForDay(state, action) {
+      state.selectedMacrosForDay = action.payload;
+    },
+    setSelectedMacrosForPeriod(state, action) {
+      state.selectedMacrosForPeriod = action.payload;
+    },
+    setPeriodStartDate(state, action) {
+      state.periodStartDate = action.payload;
+    },
+    setPeriodEndDate(state, action) {
+      state.periodEndDate = action.payload;
+    },
+    setDayAdjustments(state, action) {
+      const { macro, value } = action.payload;
+      state.dayAdjustments[macro] = value;
+    },
+    setPeriodAdjustments(state, action) {
+      const { macro, value } = action.payload;
+      state.periodAdjustments[macro] = value;
+    },
+    setAssignedPlanByDay(state, action) {
+      state.assignedPlanByDay = {
+        ...state.assignedPlanByDay,
+        ...action.payload,
+      };
+    },
+    setAssignedPlan(state, action) {
+      state.assignedPlan = action.payload;
+    },
+    setWeekDays(state, action) {
+      state.weekDays = action.payload;
+    },
+    setNutritionPlan(state, action) {
+      return {
+        ...state,
+        ...action.payload,
+      };
     },
   },
 });
 
 export const {
-  updatePersonalInfo,
+  setPersonalInfo,
   setRecommendedMacros,
-  setCustomizedInput,
-  setCustomizedMacros,
-  setAdjustments,
-  setMode,
-  assignMacrosToDay,
-  resetNutritionState,
+  setCustomInput,
+  setAppliedCustomMacros,
+  setAssignPeriod,
+  setSelectedDayIndex,
+  setSelectedMacrosForDay,
+  setSelectedMacrosForPeriod,
+  setPeriodStartDate,
+  setPeriodEndDate,
+  setDayAdjustments,
+  setPeriodAdjustments,
+  setAssignedPlanByDay,
+  setAssignedPlan,
+  setWeekDays,
+  setNutritionPlan,
 } = nutritionSlice.actions;
 
 export default nutritionSlice.reducer;

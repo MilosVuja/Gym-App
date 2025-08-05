@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
@@ -36,6 +36,12 @@ export default function MealPlanner() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  const assignedPlanByDay = useSelector(
+    (state) => state.nutrition.assignedPlanByDay
+  );
+  const weekDays = useSelector((state) => state.nutrition.weekDays);
+  console.log(weekDays);
+  console.log(assignedPlanByDay);
   const meals = useSelector((state) => state.meals.meals);
 
   const favoriteMeals = useSelector((state) => state.favorites.favoriteMeals);
@@ -44,14 +50,50 @@ export default function MealPlanner() {
     (state) => state.favorites.favoriteIngredients
   );
 
-  const [noMacrosFound, setNoMacrosFound] = useState(false);
-  const [macroValues, setMacroValues] = useState(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [mealsTotals, setMealsTotals] = useState([]);
   const calendarRef = useRef(null);
+  const [, setNoMacrosFound] = useState(false);
 
   const formatISODate = (date) => date.toISOString().split("T")[0];
+
+  const macrosForSelectedDate = useMemo(() => {
+    if (
+      !Array.isArray(weekDays) ||
+      !assignedPlanByDay ||
+      Object.keys(assignedPlanByDay).length === 0
+    ) {
+      return null;
+    }
+
+    const currentISO = formatISODate(currentDate);
+
+    const matchingIndex = weekDays.findIndex((day) => {
+      const dayISO = new Date(day.date).toISOString().split("T")[0];
+      return dayISO === currentISO;
+    });
+
+    if (matchingIndex === -1) return null;
+
+    const macros = assignedPlanByDay[matchingIndex];
+    if (!macros) return null;
+
+    return [
+      macros.kcal ?? macros.calories ?? 0,
+      macros.protein ?? 0,
+      macros.carbs ?? 0,
+      macros.fat ?? 0,
+    ];
+  }, [currentDate, assignedPlanByDay, weekDays]);
+
+  useEffect(() => {
+    if (!macrosForSelectedDate) {
+      setNoMacrosFound(true);
+    } else {
+      setNoMacrosFound(false);
+    }
+  }, [macrosForSelectedDate]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -66,40 +108,6 @@ export default function MealPlanner() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isCalendarOpen]);
-
-  useEffect(() => {
-    const nutritionByDateStr = localStorage.getItem("nutritionPlanByDate");
-    if (nutritionByDateStr) {
-      try {
-        const nutritionByDate = JSON.parse(nutritionByDateStr);
-        const key = formatISODate(currentDate);
-
-        if (nutritionByDate[key]) {
-          const macros = nutritionByDate[key];
-          setMacroValues([
-            macros.calories || 0,
-            macros.protein || 0,
-            macros.carbs || 0,
-            macros.fat || 0,
-          ]);
-          setNoMacrosFound(false);
-        } else {
-          setMacroValues(null);
-          setNoMacrosFound(true);
-        }
-      } catch (err) {
-        console.error(
-          "Error parsing nutritionPlanByDate from localStorage:",
-          err
-        );
-        setMacroValues(null);
-        setNoMacrosFound(true);
-      }
-    } else {
-      setMacroValues(null);
-      setNoMacrosFound(true);
-    }
-  }, [currentDate]);
 
   const formatDate = (date) => {
     const options = { weekday: "long" };
@@ -145,8 +153,8 @@ export default function MealPlanner() {
     }
   });
 
-  const remainingMacros = macroValues
-    ? macroValues.map((val, idx) => val - (grandTotals[idx] || 0))
+  const remainingMacros = macrosForSelectedDate
+    ? macrosForSelectedDate.map((val, idx) => val - (grandTotals[idx] || 0))
     : [0, 0, 0, 0];
 
   function handleMealNameChange(mealId, newName) {
@@ -179,6 +187,14 @@ export default function MealPlanner() {
     dispatch(addIngredientToMeal({ mealId, ingredient }));
   };
 
+  useEffect(() => {
+    if (!macrosForSelectedDate) {
+      setNoMacrosFound(true);
+    } else {
+      setNoMacrosFound(false);
+    }
+  }, [macrosForSelectedDate]);
+
   const handleEditIngredient = (
     mealIndex,
     ingredientIndex,
@@ -204,7 +220,8 @@ export default function MealPlanner() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-2xl text-center font-bold mb-6">Meal Planner</h1>
-      {noMacrosFound ? (
+
+      {!macrosForSelectedDate ? (
         <div className="text-center p-6 bg-yellow-100 text-yellow-900 rounded border border-yellow-300">
           <p>No macros found for {formatDate(currentDate)}.</p>
           <button
@@ -216,12 +233,11 @@ export default function MealPlanner() {
         </div>
       ) : (
         <>
+
           <div className="relative">
             <div className="border border-white-700 rounded">
               <div className="flex justify-between p-4">
-                <div className="flex items-center">
-                  <p className="text-xl font-semibold">Your Meals for:</p>
-                </div>
+                <p className="text-xl font-semibold">Your Meals for:</p>
                 <div className="flex items-center space-x-4 relative mr-30">
                   <button onClick={goToPreviousDay}>
                     <FaLongArrowAltLeft />
@@ -259,23 +275,33 @@ export default function MealPlanner() {
                 </div>
               </div>
             </div>
-            <div className="bg-red-500 flex text-white absolute top-17 right-10">
-              <div className="flex flex-col items-center text-white p-4 w-20 border-r-1 border-white">
-                <p>Calories</p>
-                <p>kcal</p>
-              </div>
-              <div className="flex flex-col items-center text-white p-4 w-20 border-l-4 border-r-1 border-white">
-                <p>Proteins</p>
-                <p>grams</p>
-              </div>
-              <div className="flex flex-col items-center text-white p-4 w-20 border-l-4 border-r-1 border-white">
-                <p>Carbs</p>
-                <p>grams</p>
-              </div>
-              <div className="flex flex-col items-center text-white p-4 w-20 border-l-4 border-white">
-                <p>Fats</p>
-                <p>grams</p>
-              </div>
+
+            <div className="bg-red-900 flex text-white absolute top-17 right-10 rounded overflow-hidden">
+              {[
+                {
+                  label: "Calories",
+                  unit: "kcal",
+                  value: macrosForSelectedDate[0],
+                },
+                {
+                  label: "Proteins",
+                  unit: "grams",
+                  value: macrosForSelectedDate[1],
+                },
+                { label: "Carbs", unit: "grams", value: macrosForSelectedDate[2] },
+                { label: "Fats", unit: "grams", value: macrosForSelectedDate[3] },
+              ].map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`flex flex-col items-center text-white p-2 w-20 border-white ${
+                    idx !== 0 ? "border-l" : ""
+                  }`}
+                >
+                  <p className="text-sm font-semibold">{item.label}</p>
+                  <p className="text-lg">{item.value}</p>
+                  <p className="text-xs">{item.unit}</p>
+                </div>
+              ))}
             </div>
 
             {meals.map((meal, idx) => (
@@ -305,15 +331,16 @@ export default function MealPlanner() {
               />
             ))}
           </div>
-          <div className="flex flex-col items-end overflow-hidden pl-4">
+
+          {/* Totals and Remaining */}
+          <div className="flex flex-col items-end overflow-hidden pl-4 mt-4">
             <TotalMacros label="Eaten macros:" values={grandTotals} />
-            {macroValues && (
-              <TotalMacros label="Daily Macros" values={macroValues} />
-            )}
-            <TotalMacros label="Remaining Macros" values={remainingMacros} />
+            <TotalMacros label="Daily macros:" values={macrosForSelectedDate} />
+            <TotalMacros label="Remaining macros:" values={remainingMacros} />
           </div>
         </>
       )}
+
       <PieChart
         protein={grandTotals[1]}
         carbs={grandTotals[2]}

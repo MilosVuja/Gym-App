@@ -4,8 +4,6 @@ const nutritionPlanController = require("../../controllers/nutrition/nutritionPl
 
 const router = express.Router();
 
-router.use(authController.protect);
-
 // /nutrition-plans
 router.get(
   "/all",
@@ -20,14 +18,15 @@ router.get(
 );
 
 router.get(
-  "/plan/:memberId/:date",
+  "/macros/:memberId/:date",
   authController.protect,
-  nutritionPlanController.getNutritionPlanByDate
+  nutritionPlanController.getMacrosByDate
 );
+
 router.post(
   "/save",
   authController.protect,
-  nutritionPlanController.createNutritionPlan
+  nutritionPlanController.createOrUpdateNutritionPlan
 );
 
 router.patch(

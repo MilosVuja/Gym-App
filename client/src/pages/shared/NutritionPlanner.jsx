@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { saveNutritionPlan } from "../../api/nutritionApi";
 import dayjs from "dayjs";
@@ -6,105 +6,86 @@ import axios from "axios";
 import MacroCard from "../../components/nutritionPlanner/MacroCard";
 import MacroSelectionPanel from "../../components/nutritionPlanner/MacroSelectionPanel";
 
-export default function NutritionPlanner() {
-  const [personalInfo, setPersonalInfo] = useState({
-    weight: "",
-    height: "",
-    gender: "male",
-    activity: "sedentary",
-    goal: "lose",
-    age: "",
-  });
+import { useSelector, useDispatch } from "react-redux";
+import {
+  setPersonalInfo,
+  setRecommendedMacros,
+  setCustomInput,
+  setAppliedCustomMacros,
+  setAssignPeriod,
+  setSelectedDayIndex,
+  setSelectedMacrosForDay,
+  setSelectedMacrosForPeriod,
+  setPeriodStartDate,
+  setPeriodEndDate,
+  setDayAdjustments,
+  setPeriodAdjustments,
+  setAssignedPlanByDay,
+  setAssignedPlan,
+  setWeekDays,
+  setNutritionPlan,
+} from "../../redux/nutritionSlice";
 
+export default function NutritionPlanner() {
   const units = {
     calories: "kcal",
     protein: "grams",
     fat: "grams",
     carbs: "grams",
   };
-
   const [errors, setErrors] = useState({});
-
-  const [recommendedMacros, setRecommendedMacros] = useState(null);
-  const [appliedCustomMacros, setAppliedCustomMacros] = useState(null);
-
-  const [customInput, setCustomInput] = useState({
-    proteinPerKg: "",
-    fatPerKg: "",
-  });
-
-  const [assignPeriod, setAssignPeriod] = useState("day");
-  const [weekDays, setWeekDays] = useState([]);
-  const [selectedDayIndex, setSelectedDayIndex] = useState(0);
-  const [dayAdjustments, setDayAdjustments] = useState({
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-  });
-  const [selectedMacrosForDay, setSelectedMacrosForDay] = useState("current");
-  const [periodStartDate, setPeriodStartDate] = useState(() =>
-    dayjs().format("YYYY-MM-DD")
-  );
-
-  const [periodAdjustments, setPeriodAdjustments] = useState({});
-  const [adjustedPeriodMacros, setAdjustedPeriodMacros] = useState(null);
-
-  const [periodEndDate, setPeriodEndDate] = useState(() =>
-    dayjs().add(1, "day").format("YYYY-MM-DD")
-  );
-
-  const [selectedMacrosForPeriod, setSelectedMacrosForPeriod] =
-    useState("current");
-
-  const [assignedPlanByDay, setAssignedPlanByDay] = useState({});
-  const [, setAssignedPlan] = useState(null);
-
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!periodStartDate) return;
+  const dispatch = useDispatch();
 
-    const minEnd = dayjs(periodStartDate).add(1, "day");
-    const currentEnd = dayjs(periodEndDate);
+  const personalInfo = useSelector((state) => state.nutrition.personalInfo);
 
-    if (!periodEndDate || currentEnd.isBefore(minEnd)) {
-      setPeriodEndDate(minEnd.format("YYYY-MM-DD"));
-    }
-  }, [periodEndDate, periodStartDate]);
+  const recommendedMacros = useSelector(
+    (state) => state.nutrition.recommendedMacros
+  );
 
-  useEffect(() => {
-    const savedDraft = localStorage.getItem("nutritionPlanDraft");
-    if (savedDraft) {
-      try {
-        const parsed = JSON.parse(savedDraft);
-        if (parsed.personalInfo) setPersonalInfo(parsed.personalInfo);
-        if (parsed.recommendedMacros)
-          setRecommendedMacros(parsed.recommendedMacros);
-        if (parsed.appliedCustomMacros)
-          setAppliedCustomMacros(parsed.appliedCustomMacros);
-        if (parsed.customInput) setCustomInput(parsed.customInput);
-        if (parsed.assignPeriod) setAssignPeriod(parsed.assignPeriod);
-        if (parsed.weekDays) setWeekDays(parsed.weekDays);
-        if (typeof parsed.selectedDayIndex === "number")
-          setSelectedDayIndex(parsed.selectedDayIndex);
-        if (parsed.dayAdjustments) setDayAdjustments(parsed.dayAdjustments);
-        if (parsed.selectedMacrosForDay)
-          setSelectedMacrosForDay(parsed.selectedMacrosForDay);
-        if (parsed.periodStartDate) setPeriodStartDate(parsed.periodStartDate);
-        if (parsed.periodAdjustments)
-          setPeriodAdjustments(parsed.periodAdjustments);
-        if (parsed.adjustedPeriodMacros)
-          setAdjustedPeriodMacros(parsed.adjustedPeriodMacros);
-        if (parsed.periodEndDate) setPeriodEndDate(parsed.periodEndDate);
-        if (parsed.selectedMacrosForPeriod)
-          setSelectedMacrosForPeriod(parsed.selectedMacrosForPeriod);
-        if (parsed.assignedPlanByDay)
-          setAssignedPlanByDay(parsed.assignedPlanByDay);
-      } catch (e) {
-        console.warn("Failed to parse saved nutrition plan draft:", e);
-      }
-    }
-  }, []);
+  const customInput = useSelector((state) => state.nutrition.customInput);
+
+  const appliedCustomMacros = useSelector(
+    (state) => state.nutrition.appliedCustomMacros
+  );
+
+  const assignPeriod = useSelector((state) => state.nutrition.assignPeriod);
+
+  const selectedDayIndex = useSelector(
+    (state) => state.nutrition.selectedDayIndex
+  );
+
+  const weekDays = useSelector((state) => state.nutrition.weekDays);
+
+  const selectedMacrosForDay = useSelector(
+    (state) => state.nutrition.selectedMacrosForDay
+  );
+
+  const selectedMacrosForPeriod = useSelector(
+    (state) => state.nutrition.selectedMacrosForPeriod
+  );
+
+  const periodStartDate = useSelector(
+    (state) => state.nutrition.periodStartDate
+  );
+
+  const periodEndDate = useSelector((state) => state.nutrition.periodEndDate);
+
+  const dayAdjustments = useSelector((state) => state.nutrition.dayAdjustments);
+
+  const periodAdjustments = useSelector(
+    (state) => state.nutrition.periodAdjustments
+  );
+
+  const assignedPlanByDay = useSelector(
+    (state) => state.nutrition.assignedPlanByDay
+  );
+  const NutritionPlan = useSelector(
+    (state) => state.nutrition.NutritionPlan
+  );
+
+  const AssignedPlan = useSelector((state) => state.nutrition.assignedPlan);
 
   useEffect(() => {
     const daysFull = [
@@ -135,49 +116,13 @@ export default function NutritionPlanner() {
       date: dates[idx],
     }));
 
-    setWeekDays(combined);
-  }, []);
-
-  useEffect(() => {
-    const planData = {
-      personalInfo,
-      recommendedMacros,
-      appliedCustomMacros,
-      customInput,
-      assignPeriod,
-      weekDays,
-      selectedDayIndex,
-      dayAdjustments,
-      selectedMacrosForDay,
-      periodStartDate,
-      periodAdjustments,
-      adjustedPeriodMacros,
-      periodEndDate,
-      selectedMacrosForPeriod,
-      assignedPlanByDay,
-    };
-
-    localStorage.setItem("nutritionPlanDraft", JSON.stringify(planData));
-  }, [
-    personalInfo,
-    recommendedMacros,
-    appliedCustomMacros,
-    customInput,
-    assignPeriod,
-    weekDays,
-    selectedDayIndex,
-    dayAdjustments,
-    selectedMacrosForDay,
-    periodStartDate,
-    periodAdjustments,
-    adjustedPeriodMacros,
-    periodEndDate,
-    selectedMacrosForPeriod,
-    assignedPlanByDay,
-  ]);
+    dispatch(setWeekDays(combined));
+  }, [dispatch]);
 
   const handleChange = (e) => {
-    setPersonalInfo({ ...personalInfo, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    dispatch(setPersonalInfo({ [name]: value }));
     setErrors((prev) => ({ ...prev, [e.target.name]: null }));
   };
 
@@ -186,63 +131,66 @@ export default function NutritionPlanner() {
       try {
         const res = await axios.get(
           "http://localhost:3000/api/v1/members/personal-info",
-          {
-            withCredentials: true,
-          }
+          { withCredentials: true }
         );
 
         const personalData = res.data?.data || {};
 
-        setPersonalInfo({
-          height: personalData.height ?? "",
-          weight: personalData.weight ?? "",
-          gender: personalData.gender ?? "male",
-          activity: personalData.activity ?? "sedentary",
-          goal: personalData.goal ?? "lose",
-          age: personalData.age ?? "",
-        });
+        dispatch(
+          setPersonalInfo({
+            height: personalData.height ?? "",
+            weight: personalData.weight ?? "",
+            gender: personalData.gender ?? "male",
+            activity: personalData.activity ?? "sedentary",
+            goal: personalData.goal ?? "lose",
+            age: personalData.age ?? "",
+          })
+        );
       } catch (error) {
         console.error("Failed to fetch personal info", error);
-        setPersonalInfo({
-          height: "",
-          weight: "",
-          gender: "male",
-          activity: "sedentary",
-          goal: "lose",
-          age: "",
-        });
+        dispatch(
+          setPersonalInfo({
+            height: "",
+            weight: "",
+            gender: "male",
+            activity: "sedentary",
+            goal: "lose",
+            age: "",
+          })
+        );
       }
     };
 
     fetchPersonalInfo();
-  }, []);
+  }, [dispatch]);
 
   const handleCustomChange = (e) => {
-    setCustomInput({ ...customInput, [e.target.name]: e.target.value });
-    setErrors((prev) => ({ ...prev, [e.target.name]: null }));
+    dispatch(setCustomInput({ name: e.target.name, value: e.target.value }));
   };
 
   const handleAssignPeriodChange = (e) => {
-    setAssignPeriod(e.target.value);
-    setSelectedMacrosForDay("current");
-    setSelectedMacrosForPeriod("current");
+    dispatch(setAssignPeriod(e.target.value));
+    dispatch(setSelectedMacrosForDay("current"));
+    dispatch(setSelectedMacrosForPeriod("current"));
   };
 
   const handleDayAdjustmentChange = (macro, value) => {
-    setDayAdjustments((prev) => ({
-      ...prev,
-      [macro]: value,
-    }));
+    dispatch(setDayAdjustments({ macro, value }));
   };
 
-  const handleSelectedMacrosForDay = (e) =>
-    setSelectedMacrosForDay(e.target.value);
-  const handleSelectedMacrosForPeriod = (e) =>
-    setSelectedMacrosForPeriod(e.target.value);
+  const handleSelectedMacrosForDay = (e) => {
+    dispatch(setSelectedMacrosForDay(e.target.value));
+  };
 
-  const handleDaySelect = (index) => setSelectedDayIndex(index);
+  const handleSelectedMacrosForPeriod = (e) => {
+    dispatch(setSelectedMacrosForPeriod(e.target.value));
+  };
 
-  const validatePersonalInfo = () => {
+  const handleDaySelect = (index) => {
+    dispatch(setSelectedDayIndex(index));
+  };
+
+  const validatePersonalInfo = useCallback(() => {
     const newErrors = {};
     const { weight, height, age } = personalInfo;
 
@@ -258,7 +206,7 @@ export default function NutritionPlanner() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [personalInfo]);
 
   const validateCustomInput = () => {
     const newErrors = {};
@@ -311,12 +259,12 @@ export default function NutritionPlanner() {
     return {
       calories:
         baseMacros.calories +
-        dayAdjustments.protein * 4 +
-        dayAdjustments.carbs * 4 +
-        dayAdjustments.fat * 9,
-      protein: baseMacros.protein + dayAdjustments.protein,
-      carbs: baseMacros.carbs + dayAdjustments.carbs,
-      fat: baseMacros.fat + dayAdjustments.fat,
+        (dayAdjustments.protein || 0) * 4 +
+        (dayAdjustments.carbs || 0) * 4 +
+        (dayAdjustments.fat || 0) * 9,
+      protein: (baseMacros.protein || 0) + (dayAdjustments.protein || 0),
+      carbs: (baseMacros.carbs || 0) + (dayAdjustments.carbs || 0),
+      fat: (baseMacros.fat || 0) + (dayAdjustments.fat || 0),
     };
   };
 
@@ -331,23 +279,16 @@ export default function NutritionPlanner() {
   };
 
   const handlePeriodAdjustmentChange = (macro, value) => {
-    setPeriodAdjustments((prev) => ({
-      ...prev,
-      [macro]: value,
-    }));
+    dispatch(setPeriodAdjustments({ macro, value }));
   };
 
-  useEffect(() => {
-    if (!recommendedMacros || !selectedMacrosForPeriod) {
-      setAdjustedPeriodMacros(null);
-      return;
-    }
+  const adjustedPeriodMacros = useMemo(() => {
+    if (!recommendedMacros || !selectedMacrosForPeriod) return null;
 
     const baseMacros = appliedCustomMacros ?? recommendedMacros;
 
     if (selectedMacrosForPeriod === "current") {
-      setAdjustedPeriodMacros(baseMacros);
-      return;
+      return baseMacros;
     }
 
     if (selectedMacrosForPeriod === "adjusted") {
@@ -358,12 +299,10 @@ export default function NutritionPlanner() {
       });
       adjusted.calories =
         adjusted.protein * 4 + adjusted.carbs * 4 + adjusted.fat * 9;
-
-      setAdjustedPeriodMacros(adjusted);
-      return;
+      return adjusted;
     }
 
-    setAdjustedPeriodMacros(null);
+    return null;
   }, [
     periodAdjustments,
     selectedMacrosForPeriod,
@@ -375,35 +314,7 @@ export default function NutritionPlanner() {
 
   const currentMacros = appliedCustomMacros ?? recommendedMacros;
 
-  useEffect(() => {
-    const { weight, height, age, gender, activity, goal } = personalInfo;
-
-    const validWeight = parseFloat(weight) > 20 && parseFloat(weight) < 500;
-    const validHeight = parseFloat(height) >= 100 && parseFloat(height) <= 250;
-    const validAge = parseInt(age) >= 10 && parseInt(age) <= 120;
-    const validGender = gender === "male" || gender === "female";
-    const validActivity = [
-      "sedentary",
-      "light",
-      "moderate",
-      "active",
-      "athlete",
-    ].includes(activity);
-    const validGoal = ["lose", "maintain", "gain"].includes(goal);
-
-    if (
-      validWeight &&
-      validHeight &&
-      validAge &&
-      validGender &&
-      validActivity &&
-      validGoal
-    ) {
-      calculateMacros();
-    }
-  });
-
-  function calculateMacros() {
+  const calculateMacros = useCallback(() => {
     if (!validatePersonalInfo()) return;
 
     const { weight, height, age, gender, activity, goal } = personalInfo;
@@ -437,11 +348,39 @@ export default function NutritionPlanner() {
       fat: Math.round(fat),
     };
 
-    setRecommendedMacros(macros);
-    setAppliedCustomMacros(null);
-  }
+    dispatch(setRecommendedMacros(macros));
+    dispatch(setAppliedCustomMacros(null));
+  }, [personalInfo, dispatch, validatePersonalInfo]);
 
-  function applyCustomMacros() {
+  useEffect(() => {
+    const { weight, height, age, gender, activity, goal } = personalInfo;
+
+    const validWeight = parseFloat(weight) > 20 && parseFloat(weight) < 500;
+    const validHeight = parseFloat(height) >= 100 && parseFloat(height) <= 250;
+    const validAge = parseInt(age) >= 10 && parseInt(age) <= 120;
+    const validGender = gender === "male" || gender === "female";
+    const validActivity = [
+      "sedentary",
+      "light",
+      "moderate",
+      "active",
+      "athlete",
+    ].includes(activity);
+    const validGoal = ["lose", "maintain", "gain"].includes(goal);
+
+    if (
+      validWeight &&
+      validHeight &&
+      validAge &&
+      validGender &&
+      validActivity &&
+      validGoal
+    ) {
+      calculateMacros();
+    }
+  }, [personalInfo, calculateMacros]);
+
+  const applyCustomMacros = () => {
     if (!recommendedMacros) return;
 
     if (!validateCustomInput()) return;
@@ -458,13 +397,15 @@ export default function NutritionPlanner() {
     const safeCarbs = Math.max(0, carbs);
     const safeFat = Math.max(0, fat);
 
-    setAppliedCustomMacros({
-      calories: kcal,
-      protein: Math.round(safeProtein),
-      carbs: Math.round(safeCarbs),
-      fat: Math.round(safeFat),
-    });
-  }
+    dispatch(
+      setAppliedCustomMacros({
+        calories: kcal,
+        protein: Math.round(safeProtein),
+        carbs: Math.round(safeCarbs),
+        fat: Math.round(safeFat),
+      })
+    );
+  };
 
   const saveMacrosForDate = (dateKey, macros) => {
     const stored = localStorage.getItem("nutritionPlanByDate");
@@ -498,10 +439,12 @@ export default function NutritionPlanner() {
 
       const selectedDate = dayjs(selectedDateObj).format("YYYY-MM-DD");
 
-      setAssignedPlanByDay((prev) => ({
-        ...prev,
-        [selectedDayIndex]: baseMacros,
-      }));
+      dispatch(
+        setAssignedPlanByDay({
+          ...assignedPlanByDay,
+          [selectedDayIndex]: baseMacros,
+        })
+      );
 
       saveMacrosForDate(selectedDate, baseMacros);
 
@@ -529,37 +472,163 @@ export default function NutritionPlanner() {
     try {
       console.log("Sending payload: ", payload);
       await saveNutritionPlan(payload);
-      setAssignedPlan({ ...payload });
+      dispatch(setAssignedPlan({ ...payload }));
     } catch (err) {
       console.error("Error saving plan:", err);
     }
   };
 
-  const saveToLocalStorage = () => {
-    const planData = {
+  const preparePayload = (params) => {
+    console.log("preparePayload called with:", params);
+
+    const {
       personalInfo,
       recommendedMacros,
       appliedCustomMacros,
       customInput,
       assignPeriod,
       assignedPlanByDay,
-      selectedDayIndex,
-      dayAdjustments,
-      selectedMacrosForDay,
-      selectedMacrosForPeriod,
-      adjustedPeriodMacros,
+      weekDays,
       periodStartDate,
       periodEndDate,
       periodAdjustments,
+      selectedMacrosForPeriod,
+      adjustedPeriodMacros,
+    } = params || {};
+
+    if (!personalInfo || !recommendedMacros) {
+      throw new Error("Missing personalInfo or recommendedMacros");
+    }
+
+    const customizedMacros = appliedCustomMacros || recommendedMacros;
+
+    const formatMacros = (macros) => ({
+      protein: macros.protein ?? 0,
+      carbs: macros.carbs ?? 0,
+      fat: macros.fat ?? 0,
+      kcal: macros.calories ?? macros.kcal ?? 0,
+    });
+
+    const payload = {
+      gender: personalInfo.gender,
+      height: Number(personalInfo.height),
+      weight: Number(personalInfo.weight),
+      age: Number(personalInfo.age) || 0,
+      activityLevel: personalInfo.activity,
+      goal: personalInfo.goal,
+
+      recommendedMacros: formatMacros(recommendedMacros),
+
+      customInput: {
+        proteinPerKg: Number(customInput.proteinPerKg || 0),
+        fatPerKg: Number(customInput.fatPerKg || 0),
+      },
+
+      customizedMacros: formatMacros(customizedMacros),
+
+      mode: assignPeriod === "day" ? "perDay" : "period",
     };
 
-    localStorage.setItem("nutritionPlanDraft", JSON.stringify(planData));
-    alert("Nutrition plan draft saved locally!");
+    if (payload.mode === "perDay") {
+      if (!weekDays || weekDays.length !== 7) {
+        throw new Error("weekDays array of length 7 required for perDay mode");
+      }
+      if (!assignedPlanByDay) {
+        throw new Error("assignedPlanByDay object required for perDay mode");
+      }
+      const firstDate = weekDays[0].date;
+      payload.date =
+        firstDate instanceof Date
+          ? firstDate.toISOString()
+          : new Date(firstDate).toISOString();
+      payload.perDayMacros = Object.entries(assignedPlanByDay)
+        .map(([dayIndex, macros]) => {
+          const idx = Number(dayIndex);
+          const dateObj = weekDays[idx]?.date;
+          if (!dateObj) return null;
+          const adjustments = { protein: 0, carbs: 0, fat: 0 };
+
+          return {
+            date:
+              dateObj instanceof Date
+                ? dateObj.toISOString()
+                : new Date(dateObj).toISOString(),
+            type: "customized",
+            adjustments,
+            finalMacros: formatMacros(macros),
+          };
+        })
+        .filter(Boolean);
+    } else if (payload.mode === "period") {
+      if (!periodStartDate || !periodEndDate) {
+        throw new Error(
+          "Missing periodStartDate or periodEndDate for period mode"
+        );
+      }
+
+      payload.date =
+        periodStartDate instanceof Date
+          ? periodStartDate.toISOString()
+          : new Date(periodStartDate).toISOString();
+
+      const adjustments = periodAdjustments || { protein: 0, carbs: 0, fat: 0 };
+      const finalMacros =
+        selectedMacrosForPeriod === "adjusted"
+          ? adjustedPeriodMacros
+          : customizedMacros;
+
+      payload.periodMacro = {
+        startDate:
+          periodStartDate instanceof Date
+            ? periodStartDate.toISOString()
+            : new Date(periodStartDate).toISOString(),
+        endDate:
+          periodEndDate instanceof Date
+            ? periodEndDate.toISOString()
+            : new Date(periodEndDate).toISOString(),
+        type:
+          selectedMacrosForPeriod === "adjusted" ? "adjusted" : "customized",
+        adjustments,
+        finalMacros: formatMacros(finalMacros),
+      };
+    } else {
+      throw new Error("Invalid assignPeriod, expected 'day' or 'period'");
+    }
+
+    payload.isActive = true;
+    payload.version = 1;
+
+    return payload;
   };
 
-  const handleSaveAndNavigate = () => {
-    saveToLocalStorage();
-    navigate("/members/meal-planner");
+  const handleSaveAndNavigate = async () => {
+    try {
+      const payload = preparePayload({
+        personalInfo,
+        recommendedMacros,
+        appliedCustomMacros,
+        customInput,
+        assignPeriod,
+        assignedPlanByDay,
+        weekDays,
+        periodStartDate,
+        periodEndDate,
+        periodAdjustments,
+        selectedMacrosForPeriod,
+        adjustedPeriodMacros,
+      });
+
+      console.log("Payload to save:", payload);
+
+      const result = await saveNutritionPlan(payload);
+
+      dispatch(setNutritionPlan(result));
+      console.log("Plan saved successfully:", result);
+
+      navigate("/members/meal-planner");
+    } catch (error) {
+      console.error("Failed to save nutrition plan:", error);
+    }
   };
 
   return (
@@ -599,9 +668,7 @@ export default function NutritionPlanner() {
                 type="number"
                 name="height"
                 value={personalInfo.height || ""}
-                onChange={(e) =>
-                  setPersonalInfo({ ...personalInfo, height: e.target.value })
-                }
+                onChange={handleChange}
                 onBlur={(e) => {
                   const value = e.target.value;
                   if (!value) {
@@ -635,11 +702,9 @@ export default function NutritionPlanner() {
               Weight (kg)
               <input
                 type="number"
-                name="Weight"
+                name="weight"
                 value={personalInfo.weight || ""}
-                onChange={(e) =>
-                  setPersonalInfo({ ...personalInfo, weight: e.target.value })
-                }
+                onChange={handleChange}
                 onBlur={(e) => {
                   const value = e.target.value;
                   if (!value) {
@@ -676,9 +741,7 @@ export default function NutritionPlanner() {
                 type="number"
                 name="age"
                 value={personalInfo.age || ""}
-                onChange={(e) =>
-                  setPersonalInfo({ ...personalInfo, age: e.target.value })
-                }
+                onChange={handleChange}
                 onBlur={(e) => {
                   const value = e.target.value;
                   if (!value) {
@@ -942,7 +1005,7 @@ export default function NutritionPlanner() {
                   type="date"
                   name="periodStart"
                   value={periodStartDate}
-                  onChange={(e) => setPeriodStartDate(e.target.value)}
+                  onChange={(e) => dispatch(setPeriodStartDate(e.target.value))}
                   className="border rounded p-1"
                 />
               </label>
@@ -953,11 +1016,14 @@ export default function NutritionPlanner() {
                   type="date"
                   name="periodEnd"
                   value={periodEndDate}
-                  onChange={(e) => {
-                    if (new Date(e.target.value) >= new Date(periodStartDate)) {
-                      setPeriodEndDate(e.target.value);
-                    }
-                  }}
+                  min={
+                    periodStartDate
+                      ? dayjs(periodStartDate)
+                          .add(1, "day")
+                          .format("YYYY-MM-DD")
+                      : ""
+                  }
+                  onChange={(e) => dispatch(setPeriodEndDate(e.target.value))}
                   className="border rounded p-1"
                 />
               </label>
