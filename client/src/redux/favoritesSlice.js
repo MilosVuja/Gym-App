@@ -19,17 +19,6 @@ const favoritesSlice = createSlice({
         (id) => id !== action.payload
       );
     },
-    addFavoriteIngredient(state, action) {
-      if (!state.favoriteIngredients.includes(action.payload)) {
-        state.favoriteIngredients.push(action.payload);
-      }
-    },
-    removeFavoriteIngredient(state, action) {
-      state.favoriteIngredients = state.favoriteIngredients.filter(
-        (id) => id !== action.payload
-      );
-    },
-
     toggleFavoriteMeal(state, action) {
       const id = String(action.payload);
       if (state.favoriteMeals.includes(id)) {
@@ -40,15 +29,28 @@ const favoritesSlice = createSlice({
         state.favoriteMeals.push(id);
       }
     },
-
+    addFavoriteIngredient(state, action) {
+      const exists = state.favoriteIngredients.find(
+        (item) => String(item.id) === String(action.payload.id)
+      );
+      if (!exists) {
+        state.favoriteIngredients.push(action.payload);
+      }
+    },
+    removeFavoriteIngredient(state, action) {
+      state.favoriteIngredients = state.favoriteIngredients.filter(
+        (item) => item.id !== action.payload
+      );
+    },
     toggleFavoriteIngredient(state, action) {
-      const id = action.payload;
-      if (state.favoriteIngredients.includes(id)) {
-        state.favoriteIngredients = state.favoriteIngredients.filter(
-          (favId) => favId !== id
-        );
+      const id = String(action.payload.id);
+      const index = state.favoriteIngredients.findIndex(
+        (item) => String(item.id) === id
+      );
+      if (index >= 0) {
+        state.favoriteIngredients.splice(index, 1);
       } else {
-        state.favoriteIngredients.push(id);
+        state.favoriteIngredients.push(action.payload);
       }
     },
   },

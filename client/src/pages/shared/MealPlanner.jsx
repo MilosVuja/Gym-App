@@ -25,10 +25,7 @@ import {
   deleteIngredientFromMeal,
 } from "../../redux/mealsSlice";
 
-import {
-  toggleFavoriteMeal,
-  toggleFavoriteIngredient,
-} from "../../redux/favoritesSlice";
+import { toggleFavoriteMeal } from "../../redux/favoritesSlice";
 
 import PieChart from "../../components/PieChart";
 
@@ -40,15 +37,9 @@ export default function MealPlanner() {
     (state) => state.nutrition.assignedPlanByDay
   );
   const weekDays = useSelector((state) => state.nutrition.weekDays);
-  console.log(weekDays);
-  console.log(assignedPlanByDay);
   const meals = useSelector((state) => state.meals.meals);
 
   const favoriteMeals = useSelector((state) => state.favorites.favoriteMeals);
-
-  const favoriteIngredients = useSelector(
-    (state) => state.favorites.favoriteIngredients
-  );
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -213,10 +204,6 @@ export default function MealPlanner() {
     dispatch(toggleFavoriteMeal(mealId));
   };
 
-  const toggleFavoriteIngredientHandler = (ingredientId) => {
-    dispatch(toggleFavoriteIngredient(ingredientId));
-  };
-
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-2xl text-center font-bold mb-6">Meal Planner</h1>
@@ -326,8 +313,6 @@ export default function MealPlanner() {
                 }
                 favoriteMeals={favoriteMeals}
                 toggleFavoriteMeal={toggleFavoriteMealHandler}
-                favoriteIngredients={favoriteIngredients}
-                toggleFavoriteIngredient={toggleFavoriteIngredientHandler}
               />
             ))}
           </div>

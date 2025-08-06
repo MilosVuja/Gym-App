@@ -2,40 +2,19 @@ import MacroCard from "./MacroCard";
 import MacroAdjuster from "./MacroAdjuster";
 
 export default function MacroSelectionPanel({
-  mode = "day",
-
-  currentMacros,
   adjustedMacros,
-
   dayAdjustments,
-  periodAdjustments,
-
-  setDayAdjustments,
-  setPeriodAdjustments,
-
+  handleDayAdjustmentChange,
   selectedMacros,
   handleSelectedMacrosChange,
-
-  handleDayAdjustmentChange,
-  handlePeriodAdjustmentChange,
-
   units,
+  currentMacros,
   formatMacros,
 }) {
-
-  const adjustments = mode === "day" ? dayAdjustments : periodAdjustments;
-  const setAdjustments =
-    mode === "day" ? setDayAdjustments : setPeriodAdjustments;
-  const onIncrement =
-    mode === "day" ? handleDayAdjustmentChange : handlePeriodAdjustmentChange;
-  const onDecrement = (macro) =>
-    onIncrement(macro, (adjustments[macro] || 0) - 1);
-  const radioName = mode === "day" ? "macrosForDay" : "macrosForPeriod";
-
   return (
     <>
       <div className="flex justify-center gap-6 mb-4">
-        <div className="border rounded p-3 w-60 shadow text-center">
+        <div className="border rounded p-3 w-48 shadow text-center">
           <MacroCard
             title="Current Macros"
             macros={currentMacros ? formatMacros(currentMacros) : null}
@@ -43,7 +22,7 @@ export default function MacroSelectionPanel({
           />
         </div>
 
-        <div className="border rounded p-3 w-60 shadow text-center">
+        <div className="border rounded p-3 w-48 shadow text-center">
           <MacroCard
             title="Adjusted Macros"
             macros={adjustedMacros}
@@ -58,14 +37,14 @@ export default function MacroSelectionPanel({
           <MacroAdjuster
             key={macro}
             macro={macro}
-            value={adjustments[macro] || 0}
-            onChange={(m, val) =>
-              setAdjustments((prev) => ({ ...prev, [m]: val }))
+            value={dayAdjustments[macro] ?? 0}
+            onChange={(m, val) => handleDayAdjustmentChange(m, val)}
+            onIncrement={(m) =>
+              handleDayAdjustmentChange(m, (dayAdjustments[m] ?? 0) + 1)
             }
-            onIncrement={() =>
-              onIncrement(macro, (adjustments[macro] || 0) + 1)
+            onDecrement={(m) =>
+              handleDayAdjustmentChange(m, (dayAdjustments[m] ?? 0) - 1)
             }
-            onDecrement={() => onDecrement(macro)}
           />
         ))}
       </div>
@@ -74,7 +53,7 @@ export default function MacroSelectionPanel({
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="radio"
-            name={radioName}
+            name="macrosForDay"
             value="current"
             checked={selectedMacros === "current"}
             onChange={handleSelectedMacrosChange}
@@ -84,7 +63,7 @@ export default function MacroSelectionPanel({
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="radio"
-            name={radioName}
+            name="macrosForDay"
             value="adjusted"
             checked={selectedMacros === "adjusted"}
             onChange={handleSelectedMacrosChange}

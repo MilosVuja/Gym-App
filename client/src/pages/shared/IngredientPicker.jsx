@@ -3,7 +3,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { addIngredientToMeal } from "../../redux/mealsSlice";
 import { getFullUnitName } from "../../utilities/fullUnitNames";
+import TabSwitcher from "../../components/common/TabSwitcher";
+import SearchIngredientsList from "../../components/common/SearchIngredientList";
+import FavoriteIngredientsList from "../../components/common/FavoriteIngredientsList";
 import { v4 as uuidv4 } from "uuid";
+import FavoritesButton from "../../components/common/FavoritesButton";
+import { toggleFavoriteIngredient } from "../../redux/favoritesSlice";
 
 export default function IngredientPicker() {
   const dispatch = useDispatch();
@@ -11,6 +16,7 @@ export default function IngredientPicker() {
   const navigate = useNavigate();
 
   const meals = useSelector((state) => state.meals.meals);
+  const favorites = useSelector((state) => state.favorites.favoriteIngredients);
   const meal = meals.find((m) => m.id === Number(mealId));
 
   const handleCancel = () => navigate("/members/meal-planner");
@@ -21,6 +27,7 @@ export default function IngredientPicker() {
   const [selectedUnitIndex, setSelectedUnitIndex] = useState(0);
   const [servingQty, setServingQty] = useState("1.0");
   const [selectedMeals, setSelectedMeals] = useState([]);
+  const [activeTab, setActiveTab] = useState("search");
 
   const originalMacrosRef = useRef({
     nf_calories: 0,
@@ -28,6 +35,15 @@ export default function IngredientPicker() {
     nf_total_carbohydrate: 0,
     nf_total_fat: 0,
   });
+
+  const isFavorite =
+    selectedFood &&
+    favorites?.some((item) => item.food_name === selectedFood.food_name);
+
+  const tabs = [
+    { id: "search", label: "Search" },
+    { id: "favorites", label: "Favorites" },
+  ];
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
@@ -128,45 +144,40 @@ export default function IngredientPicker() {
     const unit = newMeasure.measure.toLowerCase();
     const newWeight = newMeasure.serving_weight || 1;
 
-    const isGramUnit =
-      unit.toLowerCase().includes("gram") || unit.toLowerCase() === "g";
+    const isGramUnit = unit.includes("gram") || unit === "g";
     const suggestedQty = isGramUnit ? 100 : 1.0;
 
     const base = originalMacrosRef.current;
 
-    let adjustedCalories, adjustedProtein, adjustedCarbs, adjustedFat;
-
-    if (isGramUnit) {
-      adjustedCalories = Math.round(base.nf_calories * (suggestedQty / 100));
-      adjustedProtein = Math.round(base.nf_protein * (suggestedQty / 100));
-      adjustedCarbs = Math.round(
-        base.nf_total_carbohydrate * (suggestedQty / 100)
-      );
-      adjustedFat = Math.round(base.nf_total_fat * (suggestedQty / 100));
-    } else {
-      const baseWeight = selectedFood.alt_measures?.[0]?.serving_weight || 1;
-      const ratio = newWeight / baseWeight;
-
-      adjustedCalories = Math.round(base.nf_calories * ratio * suggestedQty);
-      adjustedProtein = Math.round(base.nf_protein * ratio * suggestedQty);
-      adjustedCarbs = Math.round(
-        base.nf_total_carbohydrate * ratio * suggestedQty
-      );
-      adjustedFat = Math.round(base.nf_total_fat * ratio * suggestedQty);
-    }
+    const ratio = isGramUnit
+      ? suggestedQty / 100
+      : (newWeight / (selectedFood.alt_measures?.[0]?.serving_weight || 1)) *
+        suggestedQty;
 
     setSelectedFood((prev) => ({
       ...prev,
       serving_unit: unit,
       serving_weight_grams: newWeight,
-      nf_calories: adjustedCalories,
-      nf_protein: adjustedProtein,
-      nf_total_carbohydrate: adjustedCarbs,
-      nf_total_fat: adjustedFat,
+      nf_calories: Math.round(base.nf_calories * ratio),
+      nf_protein: Math.round(base.nf_protein * ratio),
+      nf_total_carbohydrate: Math.round(base.nf_total_carbohydrate * ratio),
+      nf_total_fat: Math.round(base.nf_total_fat * ratio),
     }));
 
     setServingQty(isGramUnit ? "100" : "1.0");
     setSelectedUnitIndex(newIndex);
+  };
+
+  const unitMap = {
+    g: "grams",
+    gram: "grams",
+    ml: "milliliters",
+    tbsp: "tablespoons",
+    tsp: "teaspoons",
+    oz: "ounces",
+    lb: "pounds",
+    piece: "piece",
+    cup: "cups",
   };
 
   const handleServingQtyChange = (e) => {
@@ -186,18 +197,14 @@ export default function IngredientPicker() {
 
   const getScaledMacro = (val) => {
     if (!selectedFood || !selectedFood.serving_weight_grams) return 0;
-
     const qtyNum = parseFloat(servingQty) || 1;
-
     const totalGrams =
       selectedFood.serving_unit === "g"
         ? qtyNum
         : qtyNum * selectedFood.serving_weight_grams;
 
     const baseGrams = originalMacrosRef.current.serving_weight_grams || 1;
-
     const raw = (val / baseGrams) * totalGrams;
-
     return Math.round(raw);
   };
 
@@ -237,45 +244,67 @@ export default function IngredientPicker() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="max-w-6xl mx-auto p-4">
       <h1 className="text-4xl text-center font-bold mb-10">
         Add food to{" "}
         <span className="italic text-black">{meal?.name || "Meal"}</span>
       </h1>
-
-      <div className="flex justify-center gap-4">
-        <div>
-          <input
-            type="text"
-            className="w-full border p-2 rounded"
-            placeholder="Search for ingredient..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+      <div className="flex gap-10 justify-center">
+        <div className="w-96 flex flex-col">
+          <TabSwitcher
+            tabs={tabs}
+            activeTab={activeTab}
+            onChange={setActiveTab}
           />
-
-          {searchText.length >= 2 && suggestions.length > 0 && (
-            <>
-              <h2 className="mt-4 font-semibold">Matching foods:</h2>
-              <div className="mt-2 max-h-[400px] overflow-auto border rounded p-2 space-y-2">
-                {suggestions.map((item, idx) => (
-                  <div
-                    key={item.tag_id || item.food_id || idx}
-                    onClick={() => handleSelectSuggestion(item)}
-                    className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 p-2 rounded flex justify-between items-center"
-                  >
-                    ...
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          <div className="mt-4 flex-1 overflow-auto p-4 min-h-[400px]">
+            {activeTab === "search" && (
+              <SearchIngredientsList
+                searchText={searchText}
+                onSearchTextChange={setSearchText}
+                suggestions={suggestions}
+                onSelectSuggestion={handleSelectSuggestion}
+                unitMap={unitMap}
+              />
+            )}
+            {activeTab === "favorites" && (
+              <>
+                <h2 className="font-semibold mb-4 text-xl text-center">
+                  Your Favorites:
+                </h2>
+                <FavoriteIngredientsList />
+              </>
+            )}
+          </div>
         </div>
+
         <div
-          className="w-96 border rounded p-4 shadow-md flex flex-col gap-4 top-4 h-fit"
+          className="relative w-96 border rounded p-4 shadow-md flex flex-col gap-4 top-4 h-fit mt-18"
           style={{ minHeight: 400 }}
         >
           {selectedFood ? (
             <>
+              <div className="flex text-white absolute top-5 right-5 rounded overflow-hidden">
+                <FavoritesButton
+                  isFavorite={isFavorite}
+                  onToggle={() =>
+                    dispatch(
+                      toggleFavoriteIngredient({
+                        ...selectedFood,
+                        id: uuidv4(),
+                        serving_qty: Number(servingQty),
+                        serving_unit: selectedFood.serving_unit,
+                        nf_calories: getScaledMacro(selectedFood.nf_calories),
+                        nf_protein: getScaledMacro(selectedFood.nf_protein),
+                        nf_total_carbohydrate: getScaledMacro(
+                          selectedFood.nf_total_carbohydrate
+                        ),
+                        nf_total_fat: getScaledMacro(selectedFood.nf_total_fat),
+                      })
+                    )
+                  }
+                />
+              </div>
+
               <h2 className="text-lg capitalize text-center font-bold">
                 {selectedFood.food_name}
               </h2>
