@@ -28,6 +28,7 @@ export default function IngredientPicker() {
   const [servingQty, setServingQty] = useState("1.0");
   const [selectedMeals, setSelectedMeals] = useState([]);
   const [activeTab, setActiveTab] = useState("search");
+  const [comment, setComment] = useState("");
 
   const originalMacrosRef = useRef({
     nf_calories: 0,
@@ -38,12 +39,42 @@ export default function IngredientPicker() {
 
   const isFavorite =
     selectedFood &&
-    favorites?.some((item) => item.food_name === selectedFood.food_name);
+    favorites.some(
+      (fav) =>
+        fav.id === selectedFood.id &&
+        Number(fav.serving_qty) === Number(servingQty) &&
+        fav.serving_unit === selectedFood.serving_unit &&
+        (fav.comment || "") === (comment || "")
+    );
 
   const tabs = [
     { id: "search", label: "Search" },
     { id: "favorites", label: "Favorites" },
   ];
+
+  const handleToggleFavorite = () => {
+    const wasFavorite = isFavorite;
+
+    dispatch(
+      toggleFavoriteIngredient({
+        ...selectedFood,
+        id: selectedFood.id,
+        serving_qty: Number(servingQty),
+        serving_unit: selectedFood.serving_unit,
+        nf_calories: getScaledMacro(selectedFood.nf_calories),
+        nf_protein: getScaledMacro(selectedFood.nf_protein),
+        nf_total_carbohydrate: getScaledMacro(
+          selectedFood.nf_total_carbohydrate
+        ),
+        nf_total_fat: getScaledMacro(selectedFood.nf_total_fat),
+        comment,
+      })
+    );
+
+    if (wasFavorite) {
+      setComment("");
+    }
+  };
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
@@ -230,6 +261,7 @@ export default function IngredientPicker() {
       ],
       quantity: servingQty,
       unit: selectedFood.serving_unit,
+      comment,
     };
 
     if (selectedMeals.length === 0) {
@@ -286,22 +318,7 @@ export default function IngredientPicker() {
               <div className="flex text-white absolute top-5 right-5 rounded overflow-hidden">
                 <FavoritesButton
                   isFavorite={isFavorite}
-                  onToggle={() =>
-                    dispatch(
-                      toggleFavoriteIngredient({
-                        ...selectedFood,
-                        id: uuidv4(),
-                        serving_qty: Number(servingQty),
-                        serving_unit: selectedFood.serving_unit,
-                        nf_calories: getScaledMacro(selectedFood.nf_calories),
-                        nf_protein: getScaledMacro(selectedFood.nf_protein),
-                        nf_total_carbohydrate: getScaledMacro(
-                          selectedFood.nf_total_carbohydrate
-                        ),
-                        nf_total_fat: getScaledMacro(selectedFood.nf_total_fat),
-                      })
-                    )
-                  }
+                  onToggle={handleToggleFavorite}
                 />
               </div>
 
@@ -376,6 +393,13 @@ export default function IngredientPicker() {
                     </div>
                   </div>
                 ))}
+                <input
+                  type="text"
+                  placeholder="Add comment here"
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  className="mt-2 px-3 py-1 w-full rounded border text-sm"
+                />
               </div>
 
               <div className="text-center mb-7">
