@@ -40,11 +40,9 @@ export default function IngredientPicker() {
   const [selectedFavoriteMeal, setSelectedFavoriteMeal] = useState(null);
 
   const [showMakeFavoriteMeal, setShowMakeFavoriteMeal] = useState(false);
-
   const [newFavoriteMealName, setNewFavoriteMealName] = useState("");
-  const [newFavoriteMealIngredients, setNewFavoriteMealIngredients] = useState(
-    []
-  );
+  const [newFavoriteMealIngredients, setNewFavoriteMealIngredients] =
+    useState([]);
 
   const originalMacrosRef = useRef({
     nf_calories: 0,
@@ -59,6 +57,10 @@ export default function IngredientPicker() {
     { id: "addToFavorites", label: "Add to Favorites" },
     { id: "addToFavoriteMeals", label: "Add to Favorite Meals" },
   ];
+
+  const isAddToFavoritesTab = activeTab === "addToFavorites";
+  const isAddToFavoriteMealsTab = activeTab === "addToFavoriteMeals";
+  const isAddToMealTab = activeTab === "addToMeal";
 
   const showMealBlock = !["addToMeal", "addToFavorites"].includes(activeTab);
 
@@ -152,7 +154,7 @@ export default function IngredientPicker() {
 
   const handleUnitChange = (e) => {
     const newIndex = Number(e.target.value);
-    const newMeasure = selectedFood.alt_measures?.[newIndex];
+    const newMeasure = selectedFood?.alt_measures?.[newIndex];
     if (!newMeasure) return;
 
     const unit = newMeasure.measure.toLowerCase();
@@ -200,10 +202,6 @@ export default function IngredientPicker() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
-
-  const isAddToFavoritesTab = activeTab === "addToFavorites";
-  const isAddToFavoriteMealsTab = activeTab === "addToFavoriteMeals";
-  const isAddToMealTab = activeTab === "addToMeal";
 
   const addButtonLabel = isAddToFavoritesTab
     ? "Save as Favorite"
@@ -338,6 +336,7 @@ export default function IngredientPicker() {
       setServingQty(val);
     }
   };
+  
   const handleServingQtyBlur = () => {
     if (servingQty === "" || isNaN(Number(servingQty))) {
       setServingQty("1.0");
@@ -368,7 +367,11 @@ export default function IngredientPicker() {
         <TabSwitcher tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div
+        className={`grid gap-6 ${
+          isAddToMealTab ? "grid-cols-2" : "grid-cols-3"
+        }`}
+      >
         <div className="col-span-1 border rounded p-4">
           <h3 className="font-semibold mb-2">Search</h3>
           <SearchIngredientsList
@@ -383,36 +386,36 @@ export default function IngredientPicker() {
           </p>
         </div>
 
-        <div className="col-span-1 border rounded p-4">
-          {isAddToFavoritesTab && (
-            <>
-              <h3 className="font-semibold mb-2">Favorite Ingredients</h3>
-              <FavoriteIngredientsList favorites={favoriteIngredients} />
-            </>
-          )}
+        {!isAddToMealTab && (
+          <div className="col-span-1 border rounded p-4">
+            {isAddToFavoritesTab && (
+              <>
+                <h3 className="font-semibold mb-2">Favorite Ingredients</h3>
+                <FavoriteIngredientsList favorites={favoriteIngredients} />
+              </>
+            )}
 
-          {isAddToFavoriteMealsTab && (
-            <>
-              <h3 className="font-semibold mb-2">Favorite Meals</h3>
+            {isAddToFavoriteMealsTab && (
+              <>
+                <h3 className="font-semibold mb-2">Favorite Meals</h3>
+                <button
+                  className="p-2 mb-2 rounded text-white bg-green-600 hover:bg-green-700"
+                  onClick={() => setShowMakeFavoriteMeal(true)}
+                >
+                  Add your favorite meal
+                </button>
+                <FavoriteMealsPanel
+                  favorites={favoriteMeals}
+                  onSelectMeal={handleSelectFavoriteMeal}
+                />
+              </>
+            )}
+          </div>
+        )}
 
-              <button
-                className="p-2 mb-2 rounded text-white bg-green-600 hover:bg-green-700"
-                onClick={() => setShowMakeFavoriteMeal(true)}
-              >
-                Add your favorite meal
-              </button>
-
-              <FavoriteMealsPanel
-                favorites={favoriteMeals}
-                onSelectMeal={handleSelectFavoriteMeal}
-              />
-            </>
-          )}
-        </div>
-
-        <div className="col-span-1 border rounded p-4 w-100">
+        <div className="col-span-1 border rounded p-4 min-h-[320px] flex flex-col">
           {selectedFood ? (
-            <>
+            <div className="flex-1 flex flex-col">
               <h2 className="text-lg capitalize text-center font-bold">
                 {selectedFood.food_name}
               </h2>
@@ -424,18 +427,7 @@ export default function IngredientPicker() {
                   type="number"
                   min="0.1"
                   step="0.1"
-                  value={
-                    selectedFood?.serving_unit
-                      ?.toLowerCase()
-                      .includes("gram") ||
-                    selectedFood?.serving_unit?.toLowerCase() === "g"
-                      ? parseFloat(servingQty) === 100
-                        ? "100"
-                        : servingQty % 1 === 0
-                        ? parseInt(servingQty)
-                        : servingQty
-                      : "1.0"
-                  }
+                  value={servingQty}
                   onChange={handleServingQtyChange}
                   onBlur={handleServingQtyBlur}
                   placeholder="1.0"
@@ -457,11 +449,15 @@ export default function IngredientPicker() {
               </div>
               <div>
                 <p className="text-sm text-gray-500 text-center mb-6">
-                  {selectedFood.serving_unit === "g"
-                    ? `You're entering ${Math.round(servingQty)} grams`
+                  {selectedFood.serving_unit &&
+                  (selectedFood.serving_unit === "g" ||
+                    selectedFood.serving_unit.includes("gram"))
+                    ? `You're entering ${Math.round(parseFloat(servingQty) || 0)} grams`
                     : `1 ${getFullUnitName(
                         selectedFood.serving_unit
-                      )} = ${Math.round(selectedFood.serving_weight_grams)}g`}
+                      )} = ${Math.round(
+                        selectedFood.serving_weight_grams || 0
+                      )}g`}
                 </p>
               </div>
 
@@ -469,7 +465,10 @@ export default function IngredientPicker() {
                 {[
                   ["Calories:", getScaledMacro(selectedFood.nf_calories)],
                   ["Protein:", getScaledMacro(selectedFood.nf_protein)],
-                  ["Carbs:", getScaledMacro(selectedFood.nf_total_carbohydrate)],
+                  [
+                    "Carbs:",
+                    getScaledMacro(selectedFood.nf_total_carbohydrate),
+                  ],
                   ["Fat:", getScaledMacro(selectedFood.nf_total_fat)],
                 ].map(([label, val]) => (
                   <div key={label} className="flex gap-2">
@@ -486,7 +485,7 @@ export default function IngredientPicker() {
                   placeholder="Add comment here"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  className="mt-2 px-3 py-1 w-full rounded border text-sm mt-6"
+                  className="mt-2 px-3 py-1 w-full rounded border text-sm"
                 />
               </div>
 
@@ -522,27 +521,29 @@ export default function IngredientPicker() {
                 </div>
               )}
 
-              <button
-                onClick={handleAdd}
-                disabled={
-                  (isAddToFavoriteMealsTab && !selectedFavoriteMeal) ||
-                  !selectedFood ||
-                  Number(servingQty) <= 0
-                }
-                className={`w-full py-2 rounded text-white ${
-                  (isAddToFavoriteMealsTab && !selectedFavoriteMeal) ||
-                  !selectedFood ||
-                  Number(servingQty) <= 0
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
-              >
-                {addButtonLabel}
-              </button>
-            </>
+              <div>
+                <button
+                  onClick={handleAdd}
+                  disabled={
+                    (isAddToFavoriteMealsTab && !selectedFavoriteMeal) ||
+                    !selectedFood ||
+                    Number(servingQty) <= 0
+                  }
+                  className={`w-full py-2 rounded text-white ${
+                    (isAddToFavoriteMealsTab && !selectedFavoriteMeal) ||
+                    !selectedFood ||
+                    Number(servingQty) <= 0
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700"
+                  }`}
+                >
+                  {addButtonLabel}
+                </button>
+              </div>
+            </div>
           ) : (
-            <div className="text-center text-gray-500">
-              <p>
+            <div className="flex-1 flex items-center justify-center">
+              <p className="text-center text-gray-500 px-4">
                 Select an ingredient from the search or favorites to view details.
               </p>
             </div>
