@@ -1,5 +1,4 @@
 import { useRef, useEffect, useState } from "react";
-import FavoritesButton from "../common/FavoritesButton";
 import { FaTrashAlt } from "react-icons/fa";
 import { BsThreeDots } from "react-icons/bs";
 
@@ -11,8 +10,8 @@ export default function MealHeader({
   onTimeChange,
   onDelete,
   onAddMeal,
-  toggleFavoriteMeal,
-  favoriteMeals = [],
+  isFirstMeal,
+  isFavoriteMode = false,
 }) {
   const [mealName, setMealName] = useState(initialName);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -25,8 +24,6 @@ export default function MealHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef();
   const timeInputRef = useRef();
-
-  const isFavorite = favoriteMeals.includes(String(mealId));
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -67,6 +64,62 @@ export default function MealHeader({
     setIsEditingTime(false);
     setError("");
   };
+
+  if (isFavoriteMode) {
+    return (
+      <div className="flex justify-between border border-white-700 rounded p-3 items-center text-white">
+        {/* Left: Meal name and delete button */}
+        <div className="flex items-center gap-4">
+          {isEditingName ? (
+            <input
+              type="text"
+              value={mealName}
+              onChange={(e) => setMealName(e.target.value)}
+              onBlur={() => {
+                setIsEditingName(false);
+                onNameChange?.(mealId, mealName);
+              }}
+              autoFocus
+              className="border px-2 py-1 rounded text-black"
+            />
+          ) : (
+            <p
+              className="text-2xl cursor-pointer"
+              onClick={() => setIsEditingName(true)}
+            >
+              {mealName}
+            </p>
+          )}
+
+          <button onClick={onDelete} className="text-white-500">
+            <FaTrashAlt />
+          </button>
+        </div>
+
+        {/* Right: Macros block */}
+        {(isFirstMeal || isFavoriteMode) && (
+          <div className="bg-red-900 flex justify-center items-center text-white rounded overflow-hidden">
+            {[
+              { label: "Calories", unit: "kcal" },
+              { label: "Proteins", unit: "grams" },
+              { label: "Carbs", unit: "grams" },
+              { label: "Fats", unit: "grams" },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className={`flex flex-col items-center text-white p-4 w-20 border-white ${
+                  idx !== 0 ? "border-l" : ""
+                }`}
+              >
+                <p className="text-sm font-semibold">{item.label}</p>
+                <p className="text-xs">{item.unit}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex justify-between border border-white-700 rounded">
@@ -165,11 +218,27 @@ export default function MealHeader({
           </button>
         </div>
       </div>
-      <div className="flex items-end p-2">
-        <FavoritesButton
-          isFavorite={isFavorite}
-          onToggle={() => toggleFavoriteMeal(mealId)}
-        />
+      <div className="flex mr-6">
+        {(isFirstMeal || isFavoriteMode) && (
+          <div className="bg-red-900 flex justify-center items-center text-white rounded overflow-hidden">
+            {[
+              { label: "Calories", unit: "kcal" },
+              { label: "Proteins", unit: "grams" },
+              { label: "Carbs", unit: "grams" },
+              { label: "Fats", unit: "grams" },
+            ].map((item, idx) => (
+              <div
+                key={idx}
+                className={`flex flex-col items-center text-white p-4 w-20 border-white ${
+                  idx !== 0 ? "border-l" : ""
+                }`}
+              >
+                <p className="text-sm font-semibold">{item.label}</p>
+                <p className="text-xs">{item.unit}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

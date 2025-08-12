@@ -25,8 +25,6 @@ import {
   deleteIngredientFromMeal,
 } from "../../redux/mealsSlice";
 
-import { toggleFavoriteMeal } from "../../redux/favoritesSlice";
-
 import PieChart from "../../components/PieChart";
 
 export default function MealPlanner() {
@@ -38,17 +36,12 @@ export default function MealPlanner() {
   );
   const weekDays = useSelector((state) => state.nutrition.weekDays);
   const meals = useSelector((state) => state.meals.meals);
-
-  const favoriteMeals = useSelector((state) => state.favorites.favoriteMeals);
-
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [mealsTotals, setMealsTotals] = useState([]);
   const calendarRef = useRef(null);
   const [, setNoMacrosFound] = useState(false);
-
   const formatISODate = (date) => date.toISOString().split("T")[0];
-
   const macrosForSelectedDate = useMemo(() => {
     if (
       !Array.isArray(weekDays) ||
@@ -178,14 +171,6 @@ export default function MealPlanner() {
     dispatch(addIngredientToMeal({ mealId, ingredient }));
   };
 
-  useEffect(() => {
-    if (!macrosForSelectedDate) {
-      setNoMacrosFound(true);
-    } else {
-      setNoMacrosFound(false);
-    }
-  }, [macrosForSelectedDate]);
-
   const handleEditIngredient = (
     mealIndex,
     ingredientIndex,
@@ -198,10 +183,6 @@ export default function MealPlanner() {
 
   const handleDeleteIngredient = (mealId, ingredientId) => {
     dispatch(deleteIngredientFromMeal({ mealId, ingredientId }));
-  };
-
-  const toggleFavoriteMealHandler = (mealId) => {
-    dispatch(toggleFavoriteMeal(mealId));
   };
 
   return (
@@ -220,7 +201,6 @@ export default function MealPlanner() {
         </div>
       ) : (
         <>
-
           <div className="relative">
             <div className="border border-white-700 rounded">
               <div className="flex justify-between p-4">
@@ -263,34 +243,6 @@ export default function MealPlanner() {
               </div>
             </div>
 
-            <div className="bg-red-900 flex text-white absolute top-17 right-10 rounded overflow-hidden">
-              {[
-                {
-                  label: "Calories",
-                  unit: "kcal",
-                  value: macrosForSelectedDate[0],
-                },
-                {
-                  label: "Proteins",
-                  unit: "grams",
-                  value: macrosForSelectedDate[1],
-                },
-                { label: "Carbs", unit: "grams", value: macrosForSelectedDate[2] },
-                { label: "Fats", unit: "grams", value: macrosForSelectedDate[3] },
-              ].map((item, idx) => (
-                <div
-                  key={idx}
-                  className={`flex flex-col items-center text-white p-2 w-20 border-white ${
-                    idx !== 0 ? "border-l" : ""
-                  }`}
-                >
-                  <p className="text-sm font-semibold">{item.label}</p>
-                  <p className="text-lg">{item.value}</p>
-                  <p className="text-xs">{item.unit}</p>
-                </div>
-              ))}
-            </div>
-
             {meals.map((meal, idx) => (
               <MealBlock
                 key={meal.id}
@@ -311,26 +263,33 @@ export default function MealPlanner() {
                 onAddIngredient={(ingredient) =>
                   handleAddIngredient(meal.id, ingredient)
                 }
-                favoriteMeals={favoriteMeals}
-                toggleFavoriteMeal={toggleFavoriteMealHandler}
+                isFirstMeal={idx === 0}
+                mealTotals={mealsTotals[idx] || [0, 0, 0, 0]}
               />
             ))}
           </div>
 
-          {/* Totals and Remaining */}
-          <div className="flex flex-col items-end overflow-hidden pl-4 mt-4">
-            <TotalMacros label="Eaten macros:" values={grandTotals} />
-            <TotalMacros label="Daily macros:" values={macrosForSelectedDate} />
-            <TotalMacros label="Remaining macros:" values={remainingMacros} />
+          <div className="flex justify-end">
+            <div className="flex flex-col items-end overflow-hidden pl-4 mt-4">
+              <TotalMacros label="Eaten macros:" values={grandTotals} />
+              <TotalMacros
+                label="Daily macros:"
+                values={macrosForSelectedDate}
+              />
+              <TotalMacros label="Remaining macros:" values={remainingMacros} />
+            </div>
           </div>
         </>
       )}
-
-      <PieChart
-        protein={grandTotals[1]}
-        carbs={grandTotals[2]}
-        fat={grandTotals[3]}
-      />
+      <div>
+        <div className="">
+          <PieChart
+            protein={grandTotals[1]}
+            carbs={grandTotals[2]}
+            fat={grandTotals[3]}
+          />
+        </div>
+      </div>
     </div>
   );
 }

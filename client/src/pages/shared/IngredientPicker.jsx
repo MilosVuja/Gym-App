@@ -1,13 +1,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
-import { addIngredientToMeal } from "../../redux/mealsSlice";
-import { getFullUnitName } from "../../utilities/fullUnitNames";
+import { v4 as uuidv4 } from "uuid";
+
 import TabSwitcher from "../../components/common/TabSwitcher";
 import SearchIngredientsList from "../../components/common/SearchIngredientList";
 import FavoriteIngredientsList from "../../components/common/FavoriteIngredientsList";
-import { v4 as uuidv4 } from "uuid";
-import FavoritesButton from "../../components/common/FavoritesButton";
+import FavoriteMealsPanel from "../../components/common/FavoriteMealsPanel";
+import MealBlock from "../../components/mealPlanner/MealBlock";
+
+import { getFullUnitName } from "../../utilities/fullUnitNames";
+
+import { addIngredientToMeal } from "../../redux/mealsSlice";
 import { toggleFavoriteIngredient } from "../../redux/favoritesSlice";
 
 export default function IngredientPicker() {
@@ -15,77 +19,84 @@ export default function IngredientPicker() {
   const { mealId } = useParams();
   const navigate = useNavigate();
 
-  const meals = useSelector((state) => state.meals.meals);
-  const favorites = useSelector((state) => state.favorites.favoriteIngredients);
+  const meals = useSelector((state) => state.meals.meals || []);
+  const favoriteIngredients = useSelector(
+    (state) => state.favorites.favoriteIngredients || []
+  );
+  const favoriteMeals = useSelector(
+    (state) => state.favorites.favoriteMeals || []
+  );
+
   const meal = meals.find((m) => m.id === Number(mealId));
 
-  const handleCancel = () => navigate("/members/meal-planner");
-
+  const [activeTab, setActiveTab] = useState("addToMeal");
   const [searchText, setSearchText] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [selectedFood, setSelectedFood] = useState(null);
   const [selectedUnitIndex, setSelectedUnitIndex] = useState(0);
   const [servingQty, setServingQty] = useState("1.0");
   const [selectedMeals, setSelectedMeals] = useState([]);
-  const [activeTab, setActiveTab] = useState("search");
   const [comment, setComment] = useState("");
+  const [selectedFavoriteMeal, setSelectedFavoriteMeal] = useState(null);
+
+  const [showMakeFavoriteMeal, setShowMakeFavoriteMeal] = useState(false);
+
+  const [newFavoriteMealName, setNewFavoriteMealName] = useState("");
+  const [newFavoriteMealIngredients, setNewFavoriteMealIngredients] = useState(
+    []
+  );
 
   const originalMacrosRef = useRef({
     nf_calories: 0,
     nf_protein: 0,
     nf_total_carbohydrate: 0,
     nf_total_fat: 0,
+    serving_weight_grams: 1,
   });
 
-  const isFavorite =
-    selectedFood &&
-    favorites.some(
-      (fav) =>
-        fav.id === selectedFood.id &&
-        Number(fav.serving_qty) === Number(servingQty) &&
-        fav.serving_unit === selectedFood.serving_unit &&
-        (fav.comment || "") === (comment || "")
-    );
-
   const tabs = [
-    { id: "search", label: "Search" },
-    { id: "favorites", label: "Favorites" },
+    { id: "addToMeal", label: "Add to Meal" },
+    { id: "addToFavorites", label: "Add to Favorites" },
+    { id: "addToFavoriteMeals", label: "Add to Favorite Meals" },
   ];
 
-  const handleToggleFavorite = () => {
-    const wasFavorite = isFavorite;
+  const showMealBlock = !["addToMeal", "addToFavorites"].includes(activeTab);
 
-    dispatch(
-      toggleFavoriteIngredient({
-        ...selectedFood,
-        id: selectedFood.id,
-        serving_qty: Number(servingQty),
-        serving_unit: selectedFood.serving_unit,
-        nf_calories: getScaledMacro(selectedFood.nf_calories),
-        nf_protein: getScaledMacro(selectedFood.nf_protein),
-        nf_total_carbohydrate: getScaledMacro(
-          selectedFood.nf_total_carbohydrate
-        ),
-        nf_total_fat: getScaledMacro(selectedFood.nf_total_fat),
-        comment,
-      })
-    );
+  const setFoodFromNutrition = (food) => {
+    originalMacrosRef.current = {
+      nf_calories: food.nf_calories || 0,
+      nf_protein: food.nf_protein || 0,
+      nf_total_carbohydrate: food.nf_total_carbohydrate || 0,
+      nf_total_fat: food.nf_total_fat || 0,
+      serving_weight_grams: food.serving_weight_grams || 1,
+    };
 
-    if (wasFavorite) {
-      setComment("");
-    }
+    setSelectedFood({
+      ...food,
+      nf_calories: food.nf_calories || 0,
+      nf_protein: food.nf_protein || 0,
+      nf_total_carbohydrate: food.nf_total_carbohydrate || 0,
+      nf_total_fat: food.nf_total_fat || 0,
+      serving_unit: (food.serving_unit || "").toLowerCase(),
+      alt_measures: food.alt_measures || [],
+      serving_weight_grams: food.serving_weight_grams || 1,
+    });
+
+    setSelectedUnitIndex(0);
+    setServingQty("1.0");
+    setSelectedMeals([]);
+    setComment("");
   };
 
   useEffect(() => {
-    const delayDebounce = setTimeout(() => {
+    const handler = setTimeout(() => {
       const fetchSuggestions = async () => {
-        if (searchText.length < 2) {
+        if (!searchText || searchText.length < 2) {
           setSuggestions([]);
           return;
         }
-
         try {
-          const response = await fetch(
+          const res = await fetch(
             `https://trackapi.nutritionix.com/v2/search/instant?query=${encodeURIComponent(
               searchText
             )}`,
@@ -97,27 +108,23 @@ export default function IngredientPicker() {
               },
             }
           );
-
-          if (!response.ok)
-            throw new Error(`HTTP error! status: ${response.status}`);
-
-          const data = await response.json();
+          if (!res.ok) throw new Error("Search failed");
+          const data = await res.json();
           setSuggestions(data.common || []);
-        } catch (error) {
-          console.error("NutritionX search failed:", error);
+        } catch (err) {
+          console.error("Nutritionix search error:", err);
           setSuggestions([]);
         }
       };
-
       fetchSuggestions();
-    }, 400);
+    }, 350);
 
-    return () => clearTimeout(delayDebounce);
+    return () => clearTimeout(handler);
   }, [searchText]);
 
   const fetchNutritionDetails = async (foodName) => {
     try {
-      const response = await fetch(
+      const res = await fetch(
         "https://trackapi.nutritionix.com/v2/natural/nutrients",
         {
           method: "POST",
@@ -129,37 +136,13 @@ export default function IngredientPicker() {
           body: JSON.stringify({ query: foodName }),
         }
       );
-
-      if (!response.ok)
-        throw new Error(`HTTP error! status: ${response.status}`);
-
-      const data = await response.json();
-
-      if (data.foods && data.foods.length > 0) {
-        const food = data.foods[0];
-
-        originalMacrosRef.current = {
-          nf_calories: food.nf_calories,
-          nf_protein: food.nf_protein,
-          nf_total_carbohydrate: food.nf_total_carbohydrate,
-          nf_total_fat: food.nf_total_fat,
-          serving_weight_grams: food.serving_weight_grams,
-        };
-
-        setSelectedFood({
-          ...food,
-          nf_calories: food.nf_calories,
-          nf_protein: food.nf_protein,
-          nf_total_carbohydrate: food.nf_total_carbohydrate,
-          nf_total_fat: food.nf_total_fat,
-        });
-
-        setSelectedUnitIndex(0);
-        setServingQty("1.0");
-        setSelectedMeals([]);
+      if (!res.ok) throw new Error("Nutrition fetch failed");
+      const data = await res.json();
+      if (data.foods && data.foods.length) {
+        setFoodFromNutrition(data.foods[0]);
       }
-    } catch (error) {
-      console.error("Failed to fetch nutrition details:", error);
+    } catch (err) {
+      console.error("Failed to fetch nutrition details:", err);
     }
   };
 
@@ -199,6 +182,170 @@ export default function IngredientPicker() {
     setSelectedUnitIndex(newIndex);
   };
 
+  const getScaledMacro = (val) => {
+    if (!selectedFood) return 0;
+    const qtyNum = parseFloat(servingQty) || 1;
+    const totalGrams =
+      selectedFood.serving_unit === "g"
+        ? qtyNum
+        : qtyNum * (selectedFood.serving_weight_grams || 1);
+
+    const baseGrams = originalMacrosRef.current.serving_weight_grams || 1;
+    const raw = (val / baseGrams) * totalGrams;
+    return Math.round(raw);
+  };
+
+  const toggleMealCheckbox = (id) => {
+    setSelectedMeals((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const isAddToFavoritesTab = activeTab === "addToFavorites";
+  const isAddToFavoriteMealsTab = activeTab === "addToFavoriteMeals";
+  const isAddToMealTab = activeTab === "addToMeal";
+
+  const addButtonLabel = isAddToFavoritesTab
+    ? "Save as Favorite"
+    : isAddToFavoriteMealsTab
+    ? selectedFavoriteMeal
+      ? `Add to ${
+          selectedFavoriteMeal.customName ||
+          selectedFavoriteMeal.name ||
+          "Favorite Meal"
+        }`
+      : "Select a Favorite Meal"
+    : "Add to Meal/s";
+
+  const handleAdd = () => {
+    if (!selectedFood || Number(servingQty) <= 0) return;
+
+    const ingredient = {
+      id: uuidv4(),
+      name: selectedFood.food_name || selectedFood.name || "Ingredient",
+      values: [
+        getScaledMacro(selectedFood.nf_calories),
+        getScaledMacro(selectedFood.nf_protein),
+        getScaledMacro(selectedFood.nf_total_carbohydrate),
+        getScaledMacro(selectedFood.nf_total_fat),
+      ],
+      quantity: servingQty,
+      unit: selectedFood.serving_unit,
+      comment,
+    };
+
+    if (isAddToFavoritesTab) {
+      dispatch(
+        toggleFavoriteIngredient({
+          ...selectedFood,
+          id: selectedFood.id || ingredient.id,
+          serving_qty: Number(servingQty),
+          serving_unit: selectedFood.serving_unit,
+          nf_calories: getScaledMacro(selectedFood.nf_calories),
+          nf_protein: getScaledMacro(selectedFood.nf_protein),
+          nf_total_carbohydrate: getScaledMacro(
+            selectedFood.nf_total_carbohydrate
+          ),
+          nf_total_fat: getScaledMacro(selectedFood.nf_total_fat),
+          comment,
+        })
+      );
+      return;
+    }
+
+    if (isAddToFavoriteMealsTab) {
+      if (!selectedFavoriteMeal) {
+        return;
+      }
+      dispatch({
+        type: "favorites/addIngredientToFavoriteMeal",
+        payload: {
+          mealId: selectedFavoriteMeal.id,
+          ingredient,
+        },
+      });
+      return;
+    }
+
+    if (selectedMeals.length === 0) {
+      dispatch(addIngredientToMeal({ mealId: Number(mealId), ingredient }));
+    } else {
+      selectedMeals.forEach((id) => {
+        dispatch(addIngredientToMeal({ mealId: id, ingredient }));
+      });
+    }
+
+    navigate("/members/meal-planner");
+  };
+
+  const handleSelectFavoriteMeal = (meal) => {
+    setSelectedFavoriteMeal(meal);
+  };
+
+  const handleNewMealNameChange = (mealId, newName) => {
+    setNewFavoriteMealName(newName);
+  };
+
+  const handleNewMealIngredientEdit = (
+    mealIndex,
+    ingredientIndex,
+    updatedIngredient
+  ) => {
+    setNewFavoriteMealIngredients((prev) => {
+      const copy = [...prev];
+      copy[ingredientIndex] = updatedIngredient;
+      return copy;
+    });
+  };
+
+  const handleNewMealIngredientDelete = (mealId, ingredientId) => {
+    setNewFavoriteMealIngredients((prev) =>
+      prev.filter((ing) => ing.id !== ingredientId)
+    );
+  };
+
+  const handleSaveNewFavoriteMeal = () => {
+    if (!newFavoriteMealName.trim()) {
+      alert("Please enter a name for your favorite meal.");
+      return;
+    }
+
+    const newMeal = {
+      id: uuidv4(),
+      customName: newFavoriteMealName.trim(),
+      ingredients: newFavoriteMealIngredients,
+    };
+
+    dispatch({
+      type: "favorites/addFavoriteMeal",
+      payload: newMeal,
+    });
+
+    setNewFavoriteMealName("");
+    setNewFavoriteMealIngredients([]);
+    setShowMakeFavoriteMeal(false);
+  };
+
+  const handleCancelNewFavoriteMeal = () => {
+    setShowMakeFavoriteMeal(false);
+    setNewFavoriteMealName("");
+    setNewFavoriteMealIngredients([]);
+  };
+
+  const handleServingQtyChange = (e) => {
+    const val = e.target.value;
+    if (/^\d*\.?\d*$/.test(val)) {
+      setServingQty(val);
+    }
+  };
+  const handleServingQtyBlur = () => {
+    if (servingQty === "" || isNaN(Number(servingQty))) {
+      setServingQty("1.0");
+    } else {
+      setServingQty(Number(servingQty).toFixed(1));
+    }
+  };
+
   const unitMap = {
     g: "grams",
     gram: "grams",
@@ -211,122 +358,66 @@ export default function IngredientPicker() {
     cup: "cups",
   };
 
-  const handleServingQtyChange = (e) => {
-    const val = e.target.value;
-    if (/^\d*\.?\d*$/.test(val)) {
-      setServingQty(val);
-    }
-  };
-
-  const handleServingQtyBlur = () => {
-    if (servingQty === "" || isNaN(Number(servingQty))) {
-      setServingQty("1.0");
-    } else {
-      setServingQty(Number(servingQty).toFixed(1));
-    }
-  };
-
-  const getScaledMacro = (val) => {
-    if (!selectedFood || !selectedFood.serving_weight_grams) return 0;
-    const qtyNum = parseFloat(servingQty) || 1;
-    const totalGrams =
-      selectedFood.serving_unit === "g"
-        ? qtyNum
-        : qtyNum * selectedFood.serving_weight_grams;
-
-    const baseGrams = originalMacrosRef.current.serving_weight_grams || 1;
-    const raw = (val / baseGrams) * totalGrams;
-    return Math.round(raw);
-  };
-
-  const toggleMealCheckbox = (mealId) => {
-    setSelectedMeals((prev) =>
-      prev.includes(mealId)
-        ? prev.filter((id) => id !== mealId)
-        : [...prev, mealId]
-    );
-  };
-
-  const handleAdd = () => {
-    if (!selectedFood || servingQty <= 0) return;
-
-    const ingredient = {
-      id: uuidv4(),
-      name: selectedFood.food_name,
-      values: [
-        getScaledMacro(selectedFood.nf_calories),
-        getScaledMacro(selectedFood.nf_protein),
-        getScaledMacro(selectedFood.nf_total_carbohydrate),
-        getScaledMacro(selectedFood.nf_total_fat),
-      ],
-      quantity: servingQty,
-      unit: selectedFood.serving_unit,
-      comment,
-    };
-
-    if (selectedMeals.length === 0) {
-      dispatch(addIngredientToMeal({ mealId: Number(mealId), ingredient }));
-    } else {
-      selectedMeals.forEach((id) => {
-        dispatch(addIngredientToMeal({ mealId: id, ingredient }));
-      });
-    }
-
-    handleCancel();
-  };
-
   return (
     <div className="max-w-6xl mx-auto p-4">
-      <h1 className="text-4xl text-center font-bold mb-10">
-        Add food to{" "}
-        <span className="italic text-black">{meal?.name || "Meal"}</span>
+      <h1 className="text-3xl text-center font-bold mb-6">
+        Add ingredient — <span className="italic">{meal?.name || "Meal"}</span>
       </h1>
-      <div className="flex gap-10 justify-center">
-        <div className="w-96 flex flex-col">
-          <TabSwitcher
-            tabs={tabs}
-            activeTab={activeTab}
-            onChange={setActiveTab}
+
+      <div className="mb-4">
+        <TabSwitcher tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+      </div>
+
+      <div className="grid grid-cols-3 gap-6">
+        <div className="col-span-1 border rounded p-4">
+          <h3 className="font-semibold mb-2">Search</h3>
+          <SearchIngredientsList
+            searchText={searchText}
+            onSearchTextChange={setSearchText}
+            suggestions={suggestions}
+            onSelectSuggestion={handleSelectSuggestion}
+            unitMap={unitMap}
           />
-          <div className="mt-4 flex-1 overflow-auto p-4 min-h-[400px]">
-            {activeTab === "search" && (
-              <SearchIngredientsList
-                searchText={searchText}
-                onSearchTextChange={setSearchText}
-                suggestions={suggestions}
-                onSelectSuggestion={handleSelectSuggestion}
-                unitMap={unitMap}
-              />
-            )}
-            {activeTab === "favorites" && (
-              <>
-                <h2 className="font-semibold mb-4 text-xl text-center">
-                  Your Favorites:
-                </h2>
-                <FavoriteIngredientsList />
-              </>
-            )}
-          </div>
+          <p className="text-xs italic text-gray-500 mt-2">
+            Tip: search by ingredient name.
+          </p>
         </div>
 
-        <div
-          className="relative w-96 border rounded p-4 shadow-md flex flex-col gap-4 top-4 h-fit mt-18"
-          style={{ minHeight: 400 }}
-        >
+        <div className="col-span-1 border rounded p-4">
+          {isAddToFavoritesTab && (
+            <>
+              <h3 className="font-semibold mb-2">Favorite Ingredients</h3>
+              <FavoriteIngredientsList favorites={favoriteIngredients} />
+            </>
+          )}
+
+          {isAddToFavoriteMealsTab && (
+            <>
+              <h3 className="font-semibold mb-2">Favorite Meals</h3>
+
+              <button
+                className="p-2 mb-2 rounded text-white bg-green-600 hover:bg-green-700"
+                onClick={() => setShowMakeFavoriteMeal(true)}
+              >
+                Add your favorite meal
+              </button>
+
+              <FavoriteMealsPanel
+                favorites={favoriteMeals}
+                onSelectMeal={handleSelectFavoriteMeal}
+              />
+            </>
+          )}
+        </div>
+
+        <div className="col-span-1 border rounded p-4 w-100">
           {selectedFood ? (
             <>
-              <div className="flex text-white absolute top-5 right-5 rounded overflow-hidden">
-                <FavoritesButton
-                  isFavorite={isFavorite}
-                  onToggle={handleToggleFavorite}
-                />
-              </div>
-
               <h2 className="text-lg capitalize text-center font-bold">
                 {selectedFood.food_name}
               </h2>
 
-              <h3 className="text-center mt-4">Your quantity</h3>
+              <h3 className="text-center my-6">Your quantity</h3>
 
               <div className="flex gap-5 items-center justify-center">
                 <input
@@ -365,7 +456,7 @@ export default function IngredientPicker() {
                 </select>
               </div>
               <div>
-                <p className="text-sm text-gray-500 text-center">
+                <p className="text-sm text-gray-500 text-center mb-6">
                   {selectedFood.serving_unit === "g"
                     ? `You're entering ${Math.round(servingQty)} grams`
                     : `1 ${getFullUnitName(
@@ -374,14 +465,11 @@ export default function IngredientPicker() {
                 </p>
               </div>
 
-              <div className="text-sm text-white font-mono mb-5">
+              <div className="text-sm text-white font-mono mb-6">
                 {[
                   ["Calories:", getScaledMacro(selectedFood.nf_calories)],
                   ["Protein:", getScaledMacro(selectedFood.nf_protein)],
-                  [
-                    "Carbs:",
-                    getScaledMacro(selectedFood.nf_total_carbohydrate),
-                  ],
+                  ["Carbs:", getScaledMacro(selectedFood.nf_total_carbohydrate)],
                   ["Fat:", getScaledMacro(selectedFood.nf_total_fat)],
                 ].map(([label, val]) => (
                   <div key={label} className="flex gap-2">
@@ -398,46 +486,85 @@ export default function IngredientPicker() {
                   placeholder="Add comment here"
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  className="mt-2 px-3 py-1 w-full rounded border text-sm"
+                  className="mt-2 px-3 py-1 w-full rounded border text-sm mt-6"
                 />
               </div>
 
-              <div className="text-center mb-7">
-                <p className="font-semibold mb-2">Add to meal(s):</p>
-                <div className="flex justify-center gap-5 max-h-48 overflow-auto">
-                  {meals.map((meal) => (
-                    <label
-                      key={meal.id}
-                      className="inline-flex items-center gap-2"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={
-                          selectedMeals.includes(meal.id) ||
-                          (!selectedMeals.length && meal.id === Number(mealId))
-                        }
-                        onChange={() => toggleMealCheckbox(meal.id)}
-                      />
-                      <span>{meal.name}</span>
-                    </label>
-                  ))}
+              {isAddToMealTab && (
+                <div className="mb-10">
+                  <p className="font-semibold mb-2 text-center">Add to meal(s)</p>
+                  <div className="flex flex-wrap gap-2 justify-center max-h-32 overflow-auto">
+                    {meals.map((m) => (
+                      <label key={m.id} className="inline-flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={
+                            selectedMeals.includes(m.id) ||
+                            (!selectedMeals.length && m.id === Number(mealId))
+                          }
+                          onChange={() => toggleMealCheckbox(m.id)}
+                        />
+                        <span>{m.name}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {isAddToFavoriteMealsTab && (
+                <div className="mb-3 text-center">
+                  <p className="text-sm text-gray-600">Selected favorite meal:</p>
+                  <p className="font-medium">
+                    {selectedFavoriteMeal?.customName ||
+                      selectedFavoriteMeal?.name ||
+                      "—"}
+                  </p>
+                </div>
+              )}
 
               <button
                 onClick={handleAdd}
-                className="mt-4 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded w-full mb-6"
+                disabled={
+                  (isAddToFavoriteMealsTab && !selectedFavoriteMeal) ||
+                  !selectedFood ||
+                  Number(servingQty) <= 0
+                }
+                className={`w-full py-2 rounded text-white ${
+                  (isAddToFavoriteMealsTab && !selectedFavoriteMeal) ||
+                  !selectedFood ||
+                  Number(servingQty) <= 0
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
               >
-                Add to Meal/s
+                {addButtonLabel}
               </button>
             </>
           ) : (
-            <div className="text-center text-gray-500 mt-20">
-              <p>Select a ingrdient from the left to see nutrition info!</p>
+            <div className="text-center text-gray-500">
+              <p>
+                Select an ingredient from the search or favorites to view details.
+              </p>
             </div>
           )}
         </div>
       </div>
+
+      {showMakeFavoriteMeal && showMealBlock && (
+        <div className="mt-8 border rounded p-4">
+          <MealBlock
+            mealName={newFavoriteMealName}
+            ingredients={newFavoriteMealIngredients}
+            onNameChange={handleNewMealNameChange}
+            onEditIngredient={handleNewMealIngredientEdit}
+            onDeleteIngredient={handleNewMealIngredientDelete}
+            onSave={handleSaveNewFavoriteMeal}
+            onCancel={handleCancelNewFavoriteMeal}
+            isNew
+            isFavoriteMode={true}
+          />
+        </div>
+      )}
     </div>
   );
 }

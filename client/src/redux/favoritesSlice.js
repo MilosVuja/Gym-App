@@ -10,24 +10,17 @@ const favoritesSlice = createSlice({
   initialState,
   reducers: {
     addFavoriteMeal(state, action) {
-      if (!state.favoriteMeals.includes(action.payload)) {
-        state.favoriteMeals.push(action.payload);
+      const meal = action.payload;
+      const exist = state.favoriteMeals.some((m)=>m.id === meal.id);
+      if(!exist){
+        state.favoriteMeals.push(meal);
       }
     },
     removeFavoriteMeal(state, action) {
+      const mealId = action.payload;
       state.favoriteMeals = state.favoriteMeals.filter(
-        (id) => id !== action.payload
+        (fav) => fav.originalMealId !== mealId
       );
-    },
-    toggleFavoriteMeal(state, action) {
-      const id = String(action.payload);
-      if (state.favoriteMeals.includes(id)) {
-        state.favoriteMeals = state.favoriteMeals.filter(
-          (favId) => favId !== id
-        );
-      } else {
-        state.favoriteMeals.push(id);
-      }
     },
     addFavoriteIngredient(state, action) {
       const exists = state.favoriteIngredients.find(

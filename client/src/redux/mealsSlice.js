@@ -48,7 +48,6 @@ const mealsSlice = createSlice({
         meal.time = time;
       }
     },
-
     addIngredientToMeal: (state, action) => {
       const { mealId, ingredient } = action.payload;
       const meal = state.meals.find((m) => m.id === mealId);
@@ -60,7 +59,6 @@ const mealsSlice = createSlice({
       const { mealIndex, ingredientIndex, updatedIngredient } = action.payload;
       state.meals[mealIndex].ingredients[ingredientIndex] = updatedIngredient;
     },
-
     deleteIngredientFromMeal(state, action) {
       const { mealId, ingredientId } = action.payload;
       const meal = state.meals.find((m) => m.id === mealId);

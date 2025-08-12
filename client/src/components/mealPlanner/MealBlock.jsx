@@ -8,7 +8,7 @@ import { IoIosAddCircle } from "react-icons/io";
 import { fetchIngredientFromNutritionix } from "../../api/nutritionApi";
 
 export default function MealBlock({
-  ingredients,
+  ingredients = [],
   mealIndex,
   mealId,
   mealName,
@@ -20,8 +20,7 @@ export default function MealBlock({
   onEditIngredient,
   onDeleteIngredient,
   onAddMeal,
-  toggleFavoriteMeal,
-  favoriteMeals,
+  isFavoriteMode = false,
 }) {
   const navigate = useNavigate();
 
@@ -81,14 +80,14 @@ export default function MealBlock({
     <div className="border border-white shadow-sm rounded">
       <MealHeader
         mealId={mealId}
-        mealName={mealName}
+        mealName={mealName || "Favorite Meal"}
         onNameChange={onNameChange}
         mealTime={mealTime}
         onTimeChange={onTimeChange}
         onDelete={onDelete}
+        isFirstMeal={mealIndex === 0}
+        isFavoriteMode={isFavoriteMode}
         onAddMeal={onAddMeal}
-        toggleFavoriteMeal={toggleFavoriteMeal}
-        favoriteMeals={favoriteMeals}
       />
 
       {ingredients.map((ingredient) => (

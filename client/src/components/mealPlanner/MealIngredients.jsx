@@ -17,8 +17,8 @@ export default function MealIngredients({ ingredient, onDelete, onEdit }) {
     Number(quantity) > 0;
 
   return (
-    <div className="relative border border-white-700 overflow-hidden pl-4">
-      <div className="flex justify-between items-center w-full p-1">
+    <div className="border border-white-700 overflow-hidden px-2 py-1">
+      <div className="flex justify-between items-center w-full">
         <div
           className="flex items-center overflow-hidden flex-grow cursor-pointer"
           onClick={onEdit}
@@ -28,32 +28,35 @@ export default function MealIngredients({ ingredient, onDelete, onEdit }) {
             {name}
             {hasValidQuantity && (
               <span className="text-gray-500">
-                {`, ${quantity}${unit ? getFullUnitName(unit) : ""}`}
+                {` ${quantity}${unit ? getFullUnitName(unit) : ""}`}
               </span>
             )}
           </p>
         </div>
+        <div className="flex">
+          <div className="flex text-white text-center min-w-[180px]">
+            {values.length > 0 ? (
+              values.map((val, idx) => (
+                <p key={idx} className="flex-1 min-w-[50px] w-20">
+                  {typeof val === "number" ? Math.round(val) : val}
+                </p>
+              ))
+            ) : (
+              <p className="text-gray-500 italic text-sm">No macros</p>
+            )}
+          </div>
 
-        <div className="flex text-white text-center min-w-[180px]">
-          {values.length > 0 ? (
-            values.map((val, idx) => (
-              <p key={idx} className="flex-1 min-w-[50px] w-20">
-                {typeof val === "number" ? Math.round(val) : val}
-              </p>
-            ))
-          ) : (
-            <p className="text-gray-500 italic text-sm">No macros</p>
-          )}
+          <div>
+            <button
+              onClick={onDelete}
+              className="text-red-500 hover:text-red-700 pr-1"
+              title={`Delete ${name}`}
+              type="button"
+            >
+              <FaMinusCircle className="size-4" />
+            </button>
+          </div>
         </div>
-
-        <button
-          onClick={onDelete}
-          className="ml-3 text-red-500 hover:text-red-700"
-          title={`Delete ${name}`}
-          type="button"
-        >
-          <FaMinusCircle className="size-4 mr-1.5" />
-        </button>
       </div>
     </div>
   );
