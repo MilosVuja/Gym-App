@@ -1,7 +1,12 @@
 import { FaMinusCircle } from "react-icons/fa";
 import { getFullUnitName } from "../../utilities/fullUnitNames";
 
-export default function MealIngredients({ ingredient, onDelete, onEdit }) {
+export default function MealIngredients({
+  ingredient,
+  onDelete,
+  onEdit,
+  isFavoriteMode,
+}) {
   const {
     name = "Unnamed",
     quantity = 1,
@@ -49,7 +54,9 @@ export default function MealIngredients({ ingredient, onDelete, onEdit }) {
           <div>
             <button
               onClick={onDelete}
-              className="text-red-500 hover:text-red-700"
+              className={`text-red-500 hover:text-red-700 ${
+                isFavoriteMode ? "mr-3" : ""
+              }`}
               title={`Delete ${name}`}
               type="button"
             >

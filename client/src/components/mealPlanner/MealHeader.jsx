@@ -98,7 +98,7 @@ export default function MealHeader({
 
         {/* Right: Macros block */}
         {(isFirstMeal || isFavoriteMode) && (
-          <div className="bg-red-900 flex justify-center items-center text-white rounded overflow-hidden">
+          <div className="bg-red-900 flex justify-center items-center text-white rounded overflow-hidden mr-7">
             {[
               { label: "Calories", unit: "kcal" },
               { label: "Proteins", unit: "grams" },

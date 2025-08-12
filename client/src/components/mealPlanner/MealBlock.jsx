@@ -96,6 +96,7 @@ export default function MealBlock({
           ingredient={ingredient}
           onDelete={() => onDeleteIngredient(mealId, ingredient.id)}
           onEdit={() => handleEditIngredientClick(ingredient)}
+          isFavoriteMode={isFavoriteMode}
         />
       ))}
 
@@ -114,17 +115,17 @@ export default function MealBlock({
           onSave={handleSaveIngredient}
         />
       )}
-
-      <div className="text-right mt-2 mr-2">
-        <button
-          onClick={handleAddIngredientClick}
-          className="text-sm text-blue-500"
-          title="Add ingredient"
-        >
-          <IoIosAddCircle className="size-5" />
-        </button>
-      </div>
-
+      {!isFavoriteMode && (
+        <div className="text-right mt-2 mr-2">
+          <button
+            onClick={handleAddIngredientClick}
+            className="text-sm text-blue-500"
+            title="Add ingredient"
+          >
+            <IoIosAddCircle className="size-5" />
+          </button>
+        </div>
+      )}
       <MealFooter
         ingredients={ingredients}
         onMealTotalChange={onMealTotalChange}
