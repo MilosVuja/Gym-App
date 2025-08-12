@@ -49,7 +49,7 @@ export default function MealIngredients({ ingredient, onDelete, onEdit }) {
           <div>
             <button
               onClick={onDelete}
-              className="text-red-500 hover:text-red-700 pr-1"
+              className="text-red-500 hover:text-red-700"
               title={`Delete ${name}`}
               type="button"
             >

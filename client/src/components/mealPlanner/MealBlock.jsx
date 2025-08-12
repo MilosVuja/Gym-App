@@ -115,7 +115,7 @@ export default function MealBlock({
         />
       )}
 
-      <div className="text-right mt-2 mr-2.5">
+      <div className="text-right mt-2 mr-2">
         <button
           onClick={handleAddIngredientClick}
           className="text-sm text-blue-500"
