@@ -68,7 +68,6 @@ export default function FavoriteMealsPanel({ favorites, onSelectMeal }) {
         })}
       </div>
 
-      {/* Pass filteredMeals here */}
       <FavoriteMealsList meals={filteredMeals} onSelectMeal={onSelectMeal} />
     </div>
   );

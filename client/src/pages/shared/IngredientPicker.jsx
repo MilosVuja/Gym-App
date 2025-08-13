@@ -41,13 +41,13 @@ export default function IngredientPicker() {
   const [servingQty, setServingQty] = useState("1.0");
   const [selectedMeals, setSelectedMeals] = useState([]);
   const [comment, setComment] = useState("");
-  const [, setSelectedFavoriteMeal] = useState(null);
 
   const [showMakeFavoriteMeal, setShowMakeFavoriteMeal] = useState(false);
   const [newFavoriteMealName, setNewFavoriteMealName] = useState("");
   const [newFavoriteMealIngredients, setNewFavoriteMealIngredients] = useState(
     []
   );
+  const [editingFavoriteMealId, setEditingFavoriteMealId] = useState(null);
 
   const originalMacrosRef = useRef({
     nf_calories: 0,
@@ -244,7 +244,6 @@ export default function IngredientPicker() {
       comment,
     };
 
-    // Mode 1: Add to Favorites
     if (isAddToFavoritesTab) {
       if (isDuplicateIngredient(favoriteIngredients, ingredient)) {
         alert(`"${ingredientName}" is already in your favorite ingredients.`);
@@ -254,7 +253,6 @@ export default function IngredientPicker() {
       return;
     }
 
-    // Mode 2: Add to Favorite Meal
     if (isAddToFavoriteMealsTab || showMakeFavoriteMeal) {
       if (isDuplicateIngredient(newFavoriteMealIngredients, ingredient)) {
         alert(
@@ -266,7 +264,6 @@ export default function IngredientPicker() {
       return;
     }
 
-    // Mode 3: Normal mode → add to actual meals
     if (selectedMeals.length === 0) {
       const targetMeal = meals.find((m) => m.id === Number(mealId));
       if (
@@ -295,7 +292,10 @@ export default function IngredientPicker() {
   };
 
   const handleSelectFavoriteMeal = (meal) => {
-    setSelectedFavoriteMeal(meal);
+    setEditingFavoriteMealId(meal.id);
+    setNewFavoriteMealName(meal.customName || meal.name || "Unnamed Meal");
+    setNewFavoriteMealIngredients(meal.ingredients || []);
+    setShowMakeFavoriteMeal(true);
   };
 
   const handleNewMealNameChange = (mealId, newName) => {
@@ -326,17 +326,39 @@ export default function IngredientPicker() {
       return;
     }
 
-    const newMeal = {
-      id: uuidv4(),
+    const isExactDuplicate = favoriteMeals.some(
+      (m) =>
+        m.id !== editingFavoriteMealId &&
+        m.customName.trim().toLowerCase() ===
+          newFavoriteMealName.trim().toLowerCase() &&
+        JSON.stringify(m.ingredients) ===
+          JSON.stringify(newFavoriteMealIngredients)
+    );
+
+    if (isExactDuplicate) {
+      alert("This favorite meal already exists.");
+      return;
+    }
+
+    const updatedMeal = {
+      id: editingFavoriteMealId || uuidv4(),
       customName: newFavoriteMealName.trim(),
       ingredients: newFavoriteMealIngredients,
     };
 
-    dispatch({
-      type: "favorites/addFavoriteMeal",
-      payload: newMeal,
-    });
+    if (editingFavoriteMealId) {
+      dispatch({
+        type: "favorites/updateFavoriteMeal",
+        payload: updatedMeal,
+      });
+    } else {
+      dispatch({
+        type: "favorites/addFavoriteMeal",
+        payload: updatedMeal,
+      });
+    }
 
+    setEditingFavoriteMealId(null);
     setNewFavoriteMealName("");
     setNewFavoriteMealIngredients([]);
     setShowMakeFavoriteMeal(false);

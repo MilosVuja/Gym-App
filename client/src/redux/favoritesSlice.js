@@ -23,7 +23,14 @@ const favoritesSlice = createSlice({
         state.favoriteMeals.push(meal);
       }
     },
-
+    updateFavoriteMeal: (state, action) => {
+      const index = state.favoriteMeals.findIndex(
+        (m) => m.id === action.payload.id
+      );
+      if (index !== -1) {
+        state.favoriteMeals[index] = action.payload;
+      }
+    },
     removeFavoriteMeal(state, action) {
       const mealId = action.payload;
       state.favoriteMeals = state.favoriteMeals.filter(
@@ -43,7 +50,6 @@ const favoritesSlice = createSlice({
         sortIngredients(state.favoriteIngredients);
       }
     },
-
     removeFavoriteIngredient(state, action) {
       const { id, serving_qty, serving_unit } = action.payload;
       state.favoriteIngredients = state.favoriteIngredients.filter(
@@ -55,7 +61,6 @@ const favoritesSlice = createSlice({
           )
       );
     },
-
     updateFavoriteComment(state, action) {
       const { id, serving_qty, serving_unit, comment } = action.payload;
       const index = state.favoriteIngredients.findIndex(
