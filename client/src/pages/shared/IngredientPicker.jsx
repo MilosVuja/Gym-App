@@ -13,7 +13,10 @@ import AddButton from "../../components/common/AddButton";
 import { getFullUnitName } from "../../utilities/fullUnitNames";
 
 import { addIngredientToMeal } from "../../redux/mealsSlice";
-import { addFavoriteMeal } from "../../redux/favoritesSlice";
+import {
+  addFavoriteMeal,
+  addFavoriteIngredient,
+} from "../../redux/favoritesSlice";
 
 export default function IngredientPicker() {
   const dispatch = useDispatch();
@@ -211,6 +214,16 @@ export default function IngredientPicker() {
     ? `Add to ${newFavoriteMealName || "Favorite Meal"}`
     : "Add to Meal/s";
 
+  const isDuplicateIngredient = (list, ingredient) => {
+    return list.some(
+      (ing) =>
+        ing.name.toLowerCase() === ingredient.name.toLowerCase() &&
+        String(ing.unit).toLowerCase() ===
+          String(ingredient.unit).toLowerCase() &&
+        Number(ing.quantity) === Number(ingredient.quantity)
+    );
+  };
+
   const handleAdd = () => {
     if (!selectedFood || Number(servingQty) <= 0) return;
 
@@ -231,28 +244,35 @@ export default function IngredientPicker() {
       comment,
     };
 
-    if (isAddToFavoriteMealsTab || showMakeFavoriteMeal) {
-      const alreadyExists = newFavoriteMealIngredients.some(
-        (ing) => ing.name.toLowerCase() === ingredientName.toLowerCase()
-      );
+    // Mode 1: Add to Favorites
+    if (isAddToFavoritesTab) {
+      if (isDuplicateIngredient(favoriteIngredients, ingredient)) {
+        alert(`"${ingredientName}" is already in your favorite ingredients.`);
+        return;
+      }
+      dispatch(addFavoriteIngredient(ingredient));
+      return;
+    }
 
-      if (alreadyExists) {
+    // Mode 2: Add to Favorite Meal
+    if (isAddToFavoriteMealsTab || showMakeFavoriteMeal) {
+      if (isDuplicateIngredient(newFavoriteMealIngredients, ingredient)) {
         alert(
           `Ingredient "${ingredientName}" is already in this favorite meal.`
         );
         return;
       }
-
       setNewFavoriteMealIngredients((prev) => [...prev, ingredient]);
       return;
     }
 
+    // Mode 3: Normal mode → add to actual meals
     if (selectedMeals.length === 0) {
       const targetMeal = meals.find((m) => m.id === Number(mealId));
-      const exists = targetMeal?.ingredients.some(
-        (ing) => ing.name.toLowerCase() === ingredientName.toLowerCase()
-      );
-      if (exists) {
+      if (
+        targetMeal &&
+        isDuplicateIngredient(targetMeal.ingredients, ingredient)
+      ) {
         alert(`Ingredient "${ingredientName}" is already in this meal.`);
         return;
       }
@@ -261,13 +281,12 @@ export default function IngredientPicker() {
       selectedMeals.forEach((id) => {
         const targetMeal = meals.find((m) => m.id === id);
         if (
-          !targetMeal.ingredients.some(
-            (ing) => ing.name.toLowerCase() === ingredientName.toLowerCase()
-          )
+          targetMeal &&
+          !isDuplicateIngredient(targetMeal.ingredients, ingredient)
         ) {
           dispatch(addIngredientToMeal({ mealId: id, ingredient }));
         } else {
-          console.log("Cant have duplicate meals")
+          console.log("Can't have duplicate ingredients in the same meal");
         }
       });
     }
@@ -560,13 +579,12 @@ export default function IngredientPicker() {
           />
           <div className="flex justify-end">
             <AddButton
-            onAdd={handleSaveNewFavoriteMeal}
-            label="Save Favorite Meal"
-            className="mt-4"
-            onClick={addFavoriteMeal}
-          />
+              onAdd={handleSaveNewFavoriteMeal}
+              label="Save Favorite Meal"
+              className="mt-4"
+              onClick={addFavoriteMeal}
+            />
           </div>
-          
         </div>
       )}
     </div>
