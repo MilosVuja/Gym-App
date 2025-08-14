@@ -211,7 +211,9 @@ export default function IngredientPicker() {
   const addButtonLabel = isAddToFavoritesTab
     ? "Save as Favorite"
     : isAddToFavoriteMealsTab
-    ? `Add to ${newFavoriteMealName || "Favorite Meal"}`
+    ? editingFavoriteMealId
+      ? "Update Favorite Meal"
+      : `Add to ${newFavoriteMealName || "Favorite Meal"}`
     : "Add to Meal/s";
 
   const isDuplicateIngredient = (list, ingredient) => {
@@ -602,7 +604,11 @@ export default function IngredientPicker() {
           <div className="flex justify-end">
             <AddButton
               onAdd={handleSaveNewFavoriteMeal}
-              label="Save Favorite Meal"
+              label={
+                editingFavoriteMealId
+                  ? "Update Favorite Meal"
+                  : "Save Favorite Meal"
+              }
               className="mt-4"
               onClick={addFavoriteMeal}
             />
