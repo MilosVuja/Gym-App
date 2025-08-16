@@ -3,10 +3,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
 
-import TabSwitcher from "../../components/common/TabSwitcher";
-import SearchIngredientsList from "../../components/common/SearchIngredientList";
-import FavoriteIngredientsList from "../../components/common/FavoriteIngredientsList";
-import FavoriteMealsPanel from "../../components/common/FavoriteMealsPanel";
+import TabSwitcher from "../../components/ingredientPicker/TabSwitcher";
+import SearchIngredientsList from "../../components/ingredientPicker/SearchIngredientList";
+import FavoriteIngredientsList from "../../components/ingredientPicker/FavoriteIngredientsList";
+import FavoriteMealsPanel from "../../components/ingredientPicker/FavoriteMealsPanel";
 import MealBlock from "../../components/mealPlanner/MealBlock";
 import AddButton from "../../components/common/AddButton";
 

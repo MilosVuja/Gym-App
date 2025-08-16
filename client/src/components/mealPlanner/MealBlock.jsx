@@ -116,7 +116,7 @@ export default function MealBlock({
         />
       )}
       {!isFavoriteMode && (
-        <div className="text-right mt-2 mr-2">
+        <div className="text-right mt-2 mx-3">
           <button
             onClick={handleAddIngredientClick}
             className="text-sm text-blue-500"

@@ -5,7 +5,7 @@ export default function MealIngredients({
   ingredient,
   onDelete,
   onEdit,
-  isFavoriteMode,
+  // isFavoriteMode,
 }) {
   const {
     name = "Unnamed",
@@ -54,9 +54,7 @@ export default function MealIngredients({
           <div>
             <button
               onClick={onDelete}
-              className={`text-red-500 hover:text-red-700 ${
-                isFavoriteMode ? "mr-3" : ""
-              }`}
+              className="text-red-500 hover:text-red-700 mx-1.5"
               title={`Delete ${name}`}
               type="button"
             >

@@ -220,7 +220,7 @@ export default function MealHeader({
       </div>
       <div className="flex mr-6">
         {(isFirstMeal || isFavoriteMode) && (
-          <div className="bg-red-900 flex justify-center items-center text-white rounded overflow-hidden mr-1">
+          <div className="bg-red-900 flex justify-center items-center text-white rounded overflow-hidden mr-4">
             {[
               { label: "Calories", unit: "kcal" },
               { label: "Proteins", unit: "grams" },
