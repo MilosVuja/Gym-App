@@ -53,14 +53,8 @@ export default function FavoriteIngredientsList() {
     setEditingKey(null);
   };
 
-  const handleRemoveFavorite = (ingredient) => {
-    dispatch(
-      removeFavoriteIngredient({
-        id: ingredient.id,
-        serving_qty: ingredient.serving_qty,
-        serving_unit: ingredient.serving_unit,
-      })
-    );
+  const handleRemove = (ingredient) => {
+    dispatch(removeFavoriteIngredient(ingredient.id));
   };
 
   const openModal = (ingredient) => setSelectedIngredient(ingredient);
@@ -104,7 +98,6 @@ export default function FavoriteIngredientsList() {
 
     closeModal();
   };
-
 
   if (!favoriteIngredients.length) {
     return (
@@ -165,7 +158,7 @@ export default function FavoriteIngredientsList() {
 
                   <DeleteButton
                     name={displayName}
-                    onDelete={() => handleRemoveFavorite(ingredient)}
+                    onDelete={() => handleRemove(ingredient)}
                   />
                 </div>
 

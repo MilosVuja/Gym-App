@@ -45,30 +45,21 @@ const favoritesSlice = createSlice({
     },
     addFavoriteIngredient(state, action) {
       const ingredient = action.payload;
-
-      console.log("Trying to save ingredient:", ingredient);
-
       const exists = state.favoriteIngredients.some(
         (item) =>
           String(item.id) === String(ingredient.id) &&
           item.serving_qty === ingredient.serving_qty &&
           item.serving_unit === ingredient.serving_unit
       );
-
-      console.log("Already exists?", exists);
-      console.log("Current favorites:", state.favoriteIngredients);
-
       if (!exists) {
         state.favoriteIngredients.push(ingredient);
         sortIngredients(state.favoriteIngredients);
         console.log("Added! New favorites:", state.favoriteIngredients);
       }
     },
-
     removeFavoriteIngredient(state, action) {
-      const { food_name } = action.payload;
       state.favoriteIngredients = state.favoriteIngredients.filter(
-        (item) => item.food_name.toLowerCase() !== food_name.toLowerCase()
+        (ing) => ing.id !== action.payload
       );
     },
     updateFavoriteComment(state, action) {
