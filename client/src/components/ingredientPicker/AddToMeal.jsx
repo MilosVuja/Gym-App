@@ -22,7 +22,7 @@ function AddToMealModal({ ingredient, meals, onClose, onConfirm }) {
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-      <div className="bg-white rounded-xl shadow-lg p-4 w-[300px] max-w-[90%]">
+      <div className="bg-black rounded-xl shadow-lg p-4 w-[300px] max-w-[90%]">
         <h2 className="text-lg font-semibold mb-3">Add to Meal</h2>
 
         {todaysMeals.length > 0 ? (

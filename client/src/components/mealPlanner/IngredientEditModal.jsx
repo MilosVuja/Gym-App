@@ -3,23 +3,20 @@ import { IoClose } from "react-icons/io5";
 import axios from "axios";
 import { getFullUnitName } from "../../utilities/fullUnitNames";
 
-export default function IngredientEditModal({
-  ingredient,
-  units = [],
-  quantity = 1,
-  selectedUnitIndex = 0,
-  onQtyChange,
-  onUnitChange,
-  onClose,
-  onSave,
-}) {
+export default function IngredientEditModal({ ingredient, onClose, onSave }) {
   const modalRef = useRef();
 
-  const [localQty, setLocalQty] = useState(quantity || 1);
-  const [localUnitIndex, setLocalUnitIndex] = useState(selectedUnitIndex || 0);
+  const [selectedFood, setSelectedFood] = useState(null);
+  const [selectedUnitIndex, setSelectedUnitIndex] = useState(0);
+  const [servingQty, setServingQty] = useState("");
 
-  const [nutritionData, setNutritionData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const originalMacrosRef = useRef({
+    nf_calories: 0,
+    nf_protein: 0,
+    nf_total_carbohydrate: 0,
+    nf_total_fat: 0,
+    serving_weight_grams: 1,
+  });
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -32,17 +29,7 @@ export default function IngredientEditModal({
   }, [onClose]);
 
   useEffect(() => {
-    setLocalQty(quantity || 1);
-    setLocalUnitIndex(selectedUnitIndex || 0);
-  }, [ingredient?.name, quantity, selectedUnitIndex]);
-
-  useEffect(() => {
-    if (!ingredient?.name) {
-      setNutritionData(null);
-      return;
-    }
-
-    setLoading(true);
+    if (!ingredient?.name) return;
     axios
       .post(
         "https://trackapi.nutritionix.com/v2/natural/nutrients",
@@ -57,56 +44,97 @@ export default function IngredientEditModal({
       )
       .then((res) => {
         if (res.data.foods && res.data.foods.length > 0) {
-          setNutritionData(res.data.foods[0]);
-        } else {
-          setNutritionData(null);
+          const food = res.data.foods[0];
+          originalMacrosRef.current = {
+            nf_calories: food.nf_calories || 0,
+            nf_protein: food.nf_protein || 0,
+            nf_total_carbohydrate: food.nf_total_carbohydrate || 0,
+            nf_total_fat: food.nf_total_fat || 0,
+            serving_weight_grams: food.serving_weight_grams || 1,
+          };
+          setSelectedFood({
+            ...food,
+            alt_measures: food.alt_measures || [],
+            serving_unit: (food.serving_unit || "").toLowerCase(),
+          });
+          setSelectedUnitIndex(0);
+          setServingQty("1.0");
         }
       })
-      .catch((err) => {
-        console.error("Nutritionix fetch error:", err);
-        setNutritionData(null);
-      })
-      .finally(() => setLoading(false));
-  }, [ingredient?.name]);
+      .catch(console.error);
+  }, [ingredient]);
 
-  const safeUnitIndex =
-    localUnitIndex >= 0 &&
-    localUnitIndex < (nutritionData?.alt_measures?.length || units.length)
-      ? localUnitIndex
-      : 0;
+  const handleUnitChange = (e) => {
+    const newIndex = Number(e.target.value);
+    if (!selectedFood) return;
+    const newMeasure = selectedFood.alt_measures?.[newIndex];
+    if (!newMeasure) return;
 
-  const getScaledValue = (macroKey) => {
-    if (!nutritionData) return null;
+    const unit = newMeasure.measure.toLowerCase();
+    const newWeight = newMeasure.serving_weight || 1;
+    const isGramUnit = unit.includes("gram") || unit === "g";
 
-    const baseWeight = nutritionData.serving_weight_grams || 100;
-    const unitWeight =
-      nutritionData.alt_measures?.[safeUnitIndex]?.serving_weight ||
-      units?.[safeUnitIndex]?.serving_weight ||
-      baseWeight;
+    const suggestedQty = isGramUnit ? 100 : 1.0;
 
-    const qty = typeof localQty === "number" && localQty > 0 ? localQty : 0;
-    const ratio = (qty * unitWeight) / baseWeight;
-    const val = nutritionData[macroKey];
+    const base = originalMacrosRef.current;
+    const ratio = isGramUnit
+      ? suggestedQty / 100
+      : (newWeight / (selectedFood.alt_measures?.[0]?.serving_weight || 1)) *
+        suggestedQty;
 
-    return val != null ? Math.round(val * ratio) : null;
+    setSelectedFood((prev) => ({
+      ...prev,
+      serving_unit: unit,
+      serving_weight_grams: newWeight,
+      nf_calories: Math.round(base.nf_calories * ratio),
+      nf_protein: Math.round(base.nf_protein * ratio),
+      nf_total_carbohydrate: Math.round(base.nf_total_carbohydrate * ratio),
+      nf_total_fat: Math.round(base.nf_total_fat * ratio),
+    }));
+
+    setServingQty(isGramUnit ? "100" : "1.0");
+    setSelectedUnitIndex(newIndex);
+  };
+
+  const getScaledMacro = (val) => {
+    if (!selectedFood) return 0;
+    const qtyNum = parseFloat(servingQty) || 1;
+    const totalGrams =
+      selectedFood.serving_unit === "g"
+        ? qtyNum
+        : qtyNum * (selectedFood.serving_weight_grams || 1);
+    const baseGrams = originalMacrosRef.current.serving_weight_grams || 1;
+    return Math.round((val / baseGrams) * totalGrams);
+  };
+
+  const handleServingQtyChange = (e) => {
+    const val = e.target.value;
+    if (/^\d*\.?\d*$/.test(val)) {
+      setServingQty(val);
+    }
+  };
+
+  const handleServingQtyBlur = () => {
+    if (servingQty === "" || isNaN(Number(servingQty))) {
+      setServingQty("1.0");
+    } else {
+      setServingQty(Number(servingQty).toFixed(1));
+    }
   };
 
   const handleSave = () => {
-    const updatedIngredient = {
+    if (!selectedFood) return;
+    onSave({
       ...ingredient,
-      quantity: localQty,
-      unit:
-        nutritionData?.alt_measures?.[safeUnitIndex]?.measure ||
-        units?.[safeUnitIndex]?.measure ||
-        "",
+      quantity: servingQty,
+      unit: selectedFood.serving_unit,
       values: [
-        getScaledValue("nf_calories"),
-        getScaledValue("nf_protein"),
-        getScaledValue("nf_total_carbohydrate"),
-        getScaledValue("nf_total_fat"),
+        getScaledMacro(selectedFood.nf_calories),
+        getScaledMacro(selectedFood.nf_protein),
+        getScaledMacro(selectedFood.nf_total_carbohydrate),
+        getScaledMacro(selectedFood.nf_total_fat),
       ],
-    };
-    onSave(updatedIngredient);
+    });
   };
 
   return (
@@ -124,93 +152,55 @@ export default function IngredientEditModal({
           </button>
         </div>
 
-        <h3 className="text-center mt-4 mb-1">Your quantity</h3>
-        <div className="flex gap-4 items-center justify-center mb-4">
-          <input
-            type="number"
-            min="0.1"
-            step="0.1"
-            value={localQty === 0 ? "" : localQty}
-            onChange={(e) => {
-              const val = parseFloat(e.target.value);
-              if (!isNaN(val) && val > 0) {
-                setLocalQty(val);
-                onQtyChange && onQtyChange(val);
-              } else if (e.target.value === "") {
-                setLocalQty(0);
-                onQtyChange && onQtyChange(0);
-              }
-            }}
-            className="w-20 rounded border p-1 text-center text-black"
-          />
-          <span>servings of</span>
-          <select
-            value={localUnitIndex}
-            onChange={(e) => {
-              const idx = Number(e.target.value);
-              if (!isNaN(idx)) {
-                setLocalUnitIndex(idx);
-                onUnitChange && onUnitChange(idx);
-              }
-            }}
-            className="w-32 rounded border p-1 text-black"
-          >
-            {(nutritionData?.alt_measures || units).length > 0 ? (
-              (nutritionData?.alt_measures || units).map((unit, idx) => (
-                <option key={idx} value={idx}>
-                  {getFullUnitName(unit.measure)}
-                </option>
-              ))
-            ) : (
-              <option value={0}>No units</option>
-            )}
-          </select>
-        </div>
+        {selectedFood && (
+          <>
+            <h3 className="text-center mt-4 mb-1">Your quantity</h3>
+            <div className="flex gap-4 items-center justify-center mb-4">
+              <input
+                type="number"
+                min="0.1"
+                step="0.1"
+                value={servingQty === 0 ? "" : servingQty}
+                onChange={handleServingQtyChange}
+                onBlur={handleServingQtyBlur}
+                className="w-20 rounded border p-1 text-center text-black"
+              />
+              <span>servings of</span>
+              <select
+                value={selectedUnitIndex}
+                onChange={handleUnitChange}
+                className="w-32 rounded border p-1 text-black"
+              >
+                {selectedFood.alt_measures?.map((unit, idx) => (
+                  <option key={idx} value={idx}>
+                    {getFullUnitName(unit.measure)}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <div className="text-sm text-white font-mono mb-5">
-          {loading ? (
-            <p>Loading macros...</p>
-          ) : nutritionData ? (
-            [
-              "nf_calories",
-              "nf_protein",
-              "nf_total_carbohydrate",
-              "nf_total_fat",
-            ].map((key, idx) => {
-              const label = ["Calories:", "Protein:", "Carbs:", "Fat:"][idx];
-              const val = getScaledValue(key);
-              return (
+            <div className="text-sm text-white font-mono mb-5">
+              {[
+                ["Calories:", getScaledMacro(selectedFood.nf_calories)],
+                ["Protein:", getScaledMacro(selectedFood.nf_protein)],
+                ["Carbs:", getScaledMacro(selectedFood.nf_total_carbohydrate)],
+                ["Fat:", getScaledMacro(selectedFood.nf_total_fat)],
+              ].map(([label, val]) => (
                 <div key={label} className="flex gap-2 justify-between">
                   <div className="w-20 text-left">{label}</div>
-                  <div className="w-10 text-right">
-                    {val !== null ? val : "-"}
-                  </div>
+                  <div className="w-10 text-right">{val}</div>
                 </div>
-              );
-            })
-          ) : ingredient?.values?.length === 4 ? (
-            [
-              ["Calories:", ingredient.values[0]],
-              ["Protein:", ingredient.values[1]],
-              ["Carbs:", ingredient.values[2]],
-              ["Fat:", ingredient.values[3]],
-            ].map(([label, val]) => (
-              <div key={label} className="flex gap-2 justify-between">
-                <div className="w-20 text-left">{label}</div>
-                <div className="w-10 text-right">{Math.round(val)}</div>
-              </div>
-            ))
-          ) : (
-            <p>No macro data available</p>
-          )}
-        </div>
+              ))}
+            </div>
 
-        <button
-          onClick={handleSave}
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-1 rounded"
-        >
-          Save Changes
-        </button>
+            <button
+              onClick={handleSave}
+              className="w-full bg-green-600 hover:bg-green-700 text-white py-1 rounded"
+            >
+              Save Changes
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

@@ -7,9 +7,15 @@ const initialState = {
 
 const sortIngredients = (ingredients) =>
   ingredients.sort((a, b) => {
-    const nameCompare = a.food_name.localeCompare(b.food_name);
+    const nameA = a.name?.toLowerCase() ?? "";
+    const nameB = b.name?.toLowerCase() ?? "";
+    const nameCompare = nameA.localeCompare(nameB);
     if (nameCompare !== 0) return nameCompare;
-    return a.serving_qty - b.serving_qty;
+
+    const qtyA = isNaN(Number(a.quantity)) ? 0 : Number(a.quantity);
+    const qtyB = isNaN(Number(b.quantity)) ? 0 : Number(b.quantity);
+
+    return qtyA - qtyB;
   });
 
 const favoritesSlice = createSlice({
@@ -39,26 +45,30 @@ const favoritesSlice = createSlice({
     },
     addFavoriteIngredient(state, action) {
       const ingredient = action.payload;
+
+      console.log("Trying to save ingredient:", ingredient);
+
       const exists = state.favoriteIngredients.some(
         (item) =>
           String(item.id) === String(ingredient.id) &&
           item.serving_qty === ingredient.serving_qty &&
           item.serving_unit === ingredient.serving_unit
       );
+
+      console.log("Already exists?", exists);
+      console.log("Current favorites:", state.favoriteIngredients);
+
       if (!exists) {
         state.favoriteIngredients.push(ingredient);
         sortIngredients(state.favoriteIngredients);
+        console.log("Added! New favorites:", state.favoriteIngredients);
       }
     },
+
     removeFavoriteIngredient(state, action) {
-      const { id, serving_qty, serving_unit } = action.payload;
+      const { food_name } = action.payload;
       state.favoriteIngredients = state.favoriteIngredients.filter(
-        (item) =>
-          !(
-            item.id === id &&
-            item.serving_qty === serving_qty &&
-            item.serving_unit === serving_unit
-          )
+        (item) => item.food_name.toLowerCase() !== food_name.toLowerCase()
       );
     },
     updateFavoriteComment(state, action) {
