@@ -2,15 +2,32 @@ import MacroCard from "./MacroCard";
 import MacroAdjuster from "./MacroAdjuster";
 
 export default function MacroSelectionPanel({
-  adjustedMacros,
   dayAdjustments,
+  periodAdjustments,
   handleDayAdjustmentChange,
+  handlePeriodAdjustmentChange,
   selectedMacros,
   handleSelectedMacrosChange,
   units,
   currentMacros,
   formatMacros,
+  mode,
 }) {
+  const adjustments = mode === "day" ? dayAdjustments : periodAdjustments;
+  const handleAdjustmentChange =
+    mode === "day" ? handleDayAdjustmentChange : handlePeriodAdjustmentChange;
+
+  const computedAdjustedMacros = {
+    protein: (currentMacros?.protein ?? 0) + (adjustments?.protein ?? 0),
+    carbs: (currentMacros?.carbs ?? 0) + (adjustments?.carbs ?? 0),
+    fat: (currentMacros?.fat ?? 0) + (adjustments?.fat ?? 0),
+    calories:
+      (currentMacros?.calories ?? 0) +
+      (adjustments?.protein ?? 0) * 4 +
+      (adjustments?.carbs ?? 0) * 4 +
+      (adjustments?.fat ?? 0) * 9,
+  };
+
   return (
     <>
       <div className="flex justify-center gap-6 mb-4">
@@ -25,7 +42,7 @@ export default function MacroSelectionPanel({
         <div className="border rounded p-3 w-48 shadow text-center">
           <MacroCard
             title="Adjusted Macros"
-            macros={adjustedMacros}
+            macros={formatMacros(computedAdjustedMacros)}
             units={units}
             emptyNote="—"
           />
@@ -37,13 +54,13 @@ export default function MacroSelectionPanel({
           <MacroAdjuster
             key={macro}
             macro={macro}
-            value={dayAdjustments[macro] ?? 0}
-            onChange={(m, val) => handleDayAdjustmentChange(m, val)}
+            value={adjustments?.[macro] ?? 0}
+            onChange={(m, val) => handleAdjustmentChange(m, val)}
             onIncrement={(m) =>
-              handleDayAdjustmentChange(m, (dayAdjustments[m] ?? 0) + 1)
+              handleAdjustmentChange(m, (adjustments?.[m] ?? 0) + 1)
             }
             onDecrement={(m) =>
-              handleDayAdjustmentChange(m, (dayAdjustments[m] ?? 0) - 1)
+              handleAdjustmentChange(m, (adjustments?.[m] ?? 0) - 1)
             }
           />
         ))}

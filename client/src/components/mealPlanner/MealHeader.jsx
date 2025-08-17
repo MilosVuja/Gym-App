@@ -287,15 +287,16 @@ export default function MealHeader({
                 >
                   Quick Add Calories
                 </li>
+                <li className="hover:bg-gray-100 px-4 py-2 cursor-pointer">
+                  Copy from Yesterday
+                </li>
                 <li
                   className="hover:bg-gray-100 px-4 py-2 cursor-pointer"
                   onClick={handleCopyFromDateClick}
                 >
                   Copy from Date
                 </li>
-                <li className="hover:bg-gray-100 px-4 py-2 cursor-pointer">
-                  Copy from Yesterday
-                </li>
+
                 <li
                   className="hover:bg-gray-100 px-4 py-2 cursor-pointer"
                   onClick={handleCopyToDateClick}
