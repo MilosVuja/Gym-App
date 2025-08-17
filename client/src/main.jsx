@@ -4,8 +4,9 @@ import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ProfilePictureProvider } from "./context/ProfilePictureProvider";
 import App from "./App";
-import { Provider } from 'react-redux';
-import { store } from '../src/redux/store';
+import { Provider } from "react-redux";
+import { store, persistor } from "../src/redux/store";
+import { PersistGate } from "redux-persist/integration/react";
 import "./main.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
@@ -13,9 +14,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <BrowserRouter>
       <AuthProvider>
         <ProfilePictureProvider>
-        <Provider store={store}>
-        <App />
-        </Provider>
+          <Provider store={store}>
+            <PersistGate loading={null} persistor={persistor}>
+              <App />
+            </PersistGate>
+          </Provider>
         </ProfilePictureProvider>
       </AuthProvider>
     </BrowserRouter>
