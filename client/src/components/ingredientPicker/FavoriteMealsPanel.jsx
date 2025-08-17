@@ -1,5 +1,9 @@
 import { useState } from "react";
 import FavoriteMealsList from "./FavoriteMealsList";
+import AddToMealModal from "../ingredientPicker/AddToMeal";
+import { useSelector, useDispatch } from "react-redux";
+import { addIngredientToMeal } from "../../redux/mealsSlice";
+import { v4 as uuidv4 } from "uuid";
 
 const filter_tags = [
   "High Protein",
@@ -10,9 +14,13 @@ const filter_tags = [
   "Easy Prep",
 ];
 
-export default function FavoriteMealsPanel({ favorites, onSelectMeal }) {
+export default function FavoriteMealsPanel({ favorites }) {
+  const dispatch = useDispatch();
+  const meals = useSelector((state) => state.meals.meals || []);
+
   const [searchText, setSearchText] = useState("");
   const [activeFilters, setActiveFilters] = useState([]);
+  const [selectedFavMeal, setSelectedFavMeal] = useState(null);
 
   const toggleFilter = (tag) => {
     setActiveFilters((prev) =>
@@ -31,6 +39,38 @@ export default function FavoriteMealsPanel({ favorites, onSelectMeal }) {
 
     return matchesName && matchesFilters;
   });
+
+  const openAddToMealModal = (meal) => setSelectedFavMeal(meal);
+  const closeAddToMealModal = () => setSelectedFavMeal(null);
+
+  const handleAddFavoriteMealToMeals = (selectedMealIds, favoriteMeal) => {
+    if (!favoriteMeal) return;
+
+    favoriteMeal.ingredients.forEach((ingredient) => {
+      const newIngredient = {
+        ...ingredient,
+        id: uuidv4(),
+      };
+
+      selectedMealIds.forEach((mealId) => {
+        const targetMeal = meals.find((m) => m.id === mealId);
+        if (!targetMeal) return;
+
+        const isDuplicate = targetMeal.ingredients?.some(
+          (ing) =>
+            ing.name.toLowerCase() === newIngredient.name.toLowerCase() &&
+            ing.unit === newIngredient.unit &&
+            Number(ing.quantity) === Number(newIngredient.quantity)
+        );
+
+        if (!isDuplicate) {
+          dispatch(addIngredientToMeal({ mealId, ingredient: newIngredient }));
+        }
+      });
+    });
+
+    closeAddToMealModal();
+  };
 
   return (
     <div className="p-4 border rounded shadow max-h-[600px] overflow-auto">
@@ -68,7 +108,21 @@ export default function FavoriteMealsPanel({ favorites, onSelectMeal }) {
         })}
       </div>
 
-      <FavoriteMealsList meals={filteredMeals} onSelectMeal={onSelectMeal} />
+      <FavoriteMealsList
+        meals={filteredMeals}
+        onSelectMeal={openAddToMealModal}
+      />
+
+      {selectedFavMeal && (
+        <AddToMealModal
+          ingredient={selectedFavMeal}
+          meals={meals}
+          onClose={closeAddToMealModal}
+          onConfirm={(selectedMealIds) =>
+            handleAddFavoriteMealToMeals(selectedMealIds, selectedFavMeal)
+          }
+        />
+      )}
     </div>
   );
 }

@@ -596,8 +596,7 @@ export default function IngredientPicker() {
             onNameChange={handleNewMealNameChange}
             onEditIngredient={handleNewMealIngredientEdit}
             onDeleteIngredient={handleNewMealIngredientDelete}
-            onSave={handleSaveNewFavoriteMeal}
-            onCancel={handleCancelNewFavoriteMeal}
+            onCancelFavorite={handleCancelNewFavoriteMeal}
             isNew
             isFavoriteMode={true}
           />

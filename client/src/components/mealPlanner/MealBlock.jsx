@@ -21,6 +21,7 @@ export default function MealBlock({
   onDeleteIngredient,
   onAddMeal,
   isFavoriteMode = false,
+  onCancelFavorite,
 }) {
   const navigate = useNavigate();
 
@@ -88,6 +89,7 @@ export default function MealBlock({
         isFirstMeal={mealIndex === 0}
         isFavoriteMode={isFavoriteMode}
         onAddMeal={onAddMeal}
+        onCancelFavorite={onCancelFavorite}
       />
 
       {ingredients.map((ingredient) => (
@@ -97,6 +99,7 @@ export default function MealBlock({
           onDelete={() => onDeleteIngredient(mealId, ingredient.id)}
           onEdit={() => handleEditIngredientClick(ingredient)}
           isFavoriteMode={isFavoriteMode}
+          onCancelFavorite={onCancelFavorite}
         />
       ))}
 

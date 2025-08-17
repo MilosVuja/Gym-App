@@ -12,9 +12,22 @@ export default function MealHeader({
   onAddMeal,
   isFirstMeal,
   isFavoriteMode = false,
+  onCancelFavorite,
 }) {
-  const [mealName, setMealName] = useState(initialName);
+  const [mealName, setMealName] = useState(initialName || "");
   const [isEditingName, setIsEditingName] = useState(false);
+
+  useEffect(() => setMealName(initialName || ""), [initialName]);
+
+  const commitNameEdit = () => {
+    setIsEditingName(false);
+    onNameChange?.(mealId, (mealName || "").trim());
+  };
+
+  const cancelNameEdit = () => {
+    setMealName(initialName || "");
+    setIsEditingName(false);
+  };
 
   const parseTime = (timeStr) => timeStr?.replace("h", "") || "08:00";
   const [timeValue, setTimeValue] = useState(parseTime(initialTime));
@@ -54,9 +67,7 @@ export default function MealHeader({
       onTimeChange?.(mealId, formatted);
       setError("");
       setIsEditingTime(false);
-    } else {
-      setError("Invalid time format (HH:MM)");
-    }
+    } else setError("Invalid time format (HH:MM)");
   };
 
   const cancelTimeEdit = () => {
@@ -65,23 +76,36 @@ export default function MealHeader({
     setError("");
   };
 
+  const NameEditor = (
+    <input
+      type="text"
+      value={mealName}
+      onChange={(e) => setMealName(e.target.value)}
+      onBlur={commitNameEdit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") commitNameEdit();
+        else if (e.key === "Escape") cancelNameEdit();
+      }}
+      autoFocus
+      className="border px-2 py-1 rounded text-black"
+    />
+  );
+
+  const handleDeleteOrCancel = () => {
+    if (isFavoriteMode && onCancelFavorite) {
+      console.log("Cancel triggered for favorite meal");
+      onCancelFavorite();
+    } else {
+      onDelete?.(mealId);
+    }
+  };
+
   if (isFavoriteMode) {
     return (
       <div className="flex justify-between border border-white-700 rounded p-3 items-center text-white">
-        {/* Left: Meal name and delete button */}
         <div className="flex items-center gap-4">
           {isEditingName ? (
-            <input
-              type="text"
-              value={mealName}
-              onChange={(e) => setMealName(e.target.value)}
-              onBlur={() => {
-                setIsEditingName(false);
-                onNameChange?.(mealId, mealName);
-              }}
-              autoFocus
-              className="border px-2 py-1 rounded text-black"
-            />
+            NameEditor
           ) : (
             <p
               className="text-2xl cursor-pointer"
@@ -91,28 +115,24 @@ export default function MealHeader({
             </p>
           )}
 
-          <button onClick={onDelete} className="text-white-500">
+          <button onClick={handleDeleteOrCancel} className="text-white-500">
             <FaTrashAlt />
           </button>
         </div>
 
-        {/* Right: Macros block */}
         {(isFirstMeal || isFavoriteMode) && (
           <div className="bg-red-900 flex justify-center items-center text-white rounded overflow-hidden mr-7">
-            {[
-              { label: "Calories", unit: "kcal" },
-              { label: "Proteins", unit: "grams" },
-              { label: "Carbs", unit: "grams" },
-              { label: "Fats", unit: "grams" },
-            ].map((item, idx) => (
+            {["Calories", "Proteins", "Carbs", "Fats"].map((label, idx) => (
               <div
                 key={idx}
                 className={`flex flex-col items-center text-white p-4 w-20 border-white ${
                   idx !== 0 ? "border-l" : ""
                 }`}
               >
-                <p className="text-sm font-semibold">{item.label}</p>
-                <p className="text-xs">{item.unit}</p>
+                <p className="text-sm font-semibold">{label}</p>
+                <p className="text-xs">
+                  {label === "Calories" ? "kcal" : "grams"}
+                </p>
               </div>
             ))}
           </div>
@@ -126,17 +146,7 @@ export default function MealHeader({
       <div className="flex flex-col text-white p-3">
         <div className="flex gap-4 items-end">
           {isEditingName ? (
-            <input
-              type="text"
-              value={mealName}
-              onChange={(e) => setMealName(e.target.value)}
-              onBlur={() => {
-                setIsEditingName(false);
-                onNameChange?.(mealId, mealName);
-              }}
-              autoFocus
-              className="border px-2 py-1 rounded text-black"
-            />
+            NameEditor
           ) : (
             <p
               className="text-2xl cursor-pointer"
@@ -154,11 +164,8 @@ export default function MealHeader({
               onChange={(e) => setTimeValue(e.target.value)}
               onBlur={commitTimeChange}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  commitTimeChange();
-                } else if (e.key === "Escape") {
-                  cancelTimeEdit();
-                }
+                if (e.key === "Enter") commitTimeChange();
+                else if (e.key === "Escape") cancelTimeEdit();
               }}
               className="border px-2 py-1 rounded text-black w-20 text-center"
               placeholder="08:00"
@@ -213,28 +220,26 @@ export default function MealHeader({
             </div>
           )}
 
-          <button onClick={onDelete}>
+          <button onClick={handleDeleteOrCancel}>
             <FaTrashAlt className="text-white-500" />
           </button>
         </div>
       </div>
+
       <div className="flex mr-6">
         {(isFirstMeal || isFavoriteMode) && (
           <div className="bg-red-900 flex justify-center items-center text-white rounded overflow-hidden mr-4">
-            {[
-              { label: "Calories", unit: "kcal" },
-              { label: "Proteins", unit: "grams" },
-              { label: "Carbs", unit: "grams" },
-              { label: "Fats", unit: "grams" },
-            ].map((item, idx) => (
+            {["Calories", "Proteins", "Carbs", "Fats"].map((label, idx) => (
               <div
                 key={idx}
                 className={`flex flex-col items-center text-white p-4 w-20 border-white ${
                   idx !== 0 ? "border-l" : ""
                 }`}
               >
-                <p className="text-sm font-semibold">{item.label}</p>
-                <p className="text-xs">{item.unit}</p>
+                <p className="text-sm font-semibold">{label}</p>
+                <p className="text-xs">
+                  {label === "Calories" ? "kcal" : "grams"}
+                </p>
               </div>
             ))}
           </div>

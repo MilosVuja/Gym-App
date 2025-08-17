@@ -31,19 +31,27 @@ export default function FavoriteMealsList({ meals, onSelectMeal }) {
         return (
           <div
             key={id}
-            className="border p-3 rounded cursor-pointer hover:bg-gray-100"
-            onClick={() => onSelectMeal(meal)}
+            className="border p-3 rounded hover:bg-gray-100 flex flex-col gap-2"
           >
-            <p className="font-semibold">
-              {customName || name || "Unnamed Meal"}
-            </p>
+            <div className="flex justify-between items-center">
+              <p className="font-semibold">
+                {customName || name || "Unnamed Meal"}
+              </p>
+
+              <button
+                className="text-xs text-green-500 hover:text-green-600 underline"
+                onClick={() => onSelectMeal(meal)}
+              >
+                + Add to Meal
+              </button>
+            </div>
 
             <p className="text-xs text-gray-700">
               calories: {Math.round(totalCalories)} | protein:{" "}
-              {Math.round(totalProtein)} | cabrs: {Math.round(totalCarbs)} |
+              {Math.round(totalProtein)} | carbs: {Math.round(totalCarbs)} |
               fat: {Math.round(totalFat)}
             </p>
-            <p className="text-xs text-gray-600 mb-1">
+            <p className="text-xs text-gray-600">
               {ingredientCount} ingredient{ingredientCount !== 1 ? "s" : ""}
             </p>
           </div>
