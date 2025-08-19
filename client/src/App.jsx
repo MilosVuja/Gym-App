@@ -1,6 +1,6 @@
 import { useLocation } from "react-router-dom";
-import Header from "./components/Header";
-import Sidebar from "./components/sidebar/Sidebar";
+import Header from "./common/Header";
+import Sidebar from "./features/sidebar/Sidebar";
 import AppRoutes from "./routes/AppRoutes";
 
 export default function App() {

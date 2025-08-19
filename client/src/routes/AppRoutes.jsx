@@ -1,27 +1,27 @@
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import ProfileLayout from "../layouts/ProfileLayout";
 
-import PersonalDetails from "../components/sidebar/tabs/shared/PersonalDetails";
-import Measurements from "../components/sidebar/tabs/shared/Measurements";
-import Training from "../components/sidebar/tabs/shared/Training";
-import Achievements from "../components/sidebar/tabs/shared/Achievements";
-import Goals from "../components/sidebar/tabs/shared/Goals";
-import Memberships from "../components/sidebar/tabs/shared/Memberships";
-import Nutrition from "../components/sidebar/tabs/shared/Nutrition";
-import Health from "../components/sidebar/tabs/shared/Health";
+import PersonalDetails from "../features/sidebar/tabs/shared/PersonalDetails";
+import Measurements from "../features/sidebar/tabs/shared/Measurements";
+import Training from "../features/sidebar/tabs/shared/Training";
+import Achievements from "../features/sidebar/tabs/shared/Achievements";
+import Goals from "../features/sidebar/tabs/shared/Goals";
+import Memberships from "../features/sidebar/tabs/shared/Memberships";
+import Nutrition from "../features/sidebar/tabs/shared/Nutrition";
+import Health from "../features/sidebar/tabs/shared/Health";
 
-import TrainingPlanner from "../pages/shared/TrainingPlanner";
-import AddExercises from "../pages/shared/AddExercises";
-import NutritionPlanner from "../pages/shared/NutritionPlanner";
-import MealPlanner from "../pages/shared/MealPlanner";
-import IngredientPicker from "../pages/shared/IngredientPicker";
+import TrainingPlanner from "../features/trainingPlanner/TrainingPlanner";
+import AddExercises from "../features/trainingPlanner/AddExercises";
+import NutritionPlanner from "../features/nutritionPlanner/NutritionPlanner";
+import MealPlanner from "../features/mealPlanner/MealPlanner";
+import IngredientPicker from "../features/ingredientPicker/IngredientPicker";
 
-import AdminApproval from "../pages/admin/AdminApproval";
-import LoginPage from "../pages/auth/Login";
-import Register from "../pages/auth/Register";
+import AdminApproval from "../features/admin/components/AdminApproval";
+import LoginPage from "../features/auth/components/Login";
+import Register from "../features/auth/components/Register";
 
-import RequireAuth from "../components/auth/RequireAuth";
-import RequireAdmin from "../components/auth/RequireAdmin";
+import RequireAuth from "../features/auth/components/RequireAuth";
+import RequireAdmin from "../features/auth/components/RequireAdmin";
 
 export default function AppRoutes() {
   return (

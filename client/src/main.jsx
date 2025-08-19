@@ -1,11 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-import { ProfilePictureProvider } from "./context/ProfilePictureProvider";
+import { AuthProvider } from "./app/context/AuthContext";
+import { ProfilePictureProvider } from "./app/context/ProfilePictureProvider";
 import App from "./App";
 import { Provider } from "react-redux";
-import { store, persistor } from "../src/redux/store";
+import { store, persistor } from "../src/app/store";
 import { PersistGate } from "redux-persist/integration/react";
 import "./main.css";
 
