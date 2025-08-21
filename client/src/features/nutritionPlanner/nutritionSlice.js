@@ -32,6 +32,7 @@ const initialState = {
     fat: 0,
   },
   assignedPlanByDay: {},
+  assignedPlanByPeriod: {},
   assignedPlan: null,
   weekDays: [],
   errors: {},
@@ -47,7 +48,6 @@ const nutritionSlice = createSlice({
         ...action.payload,
       };
     },
-
     setRecommendedMacros(state, action) {
       state.recommendedMacros = action.payload;
     },
@@ -90,6 +90,12 @@ const nutritionSlice = createSlice({
         ...action.payload,
       };
     },
+    setAssignedPlanByPeriod(state, action) {
+      state.assignedPlanByPeriod = {
+        ...state.assignedPlanByPeriod,
+        ...action.payload,
+      };
+    },
     setAssignedPlan(state, action) {
       state.assignedPlan = action.payload;
     },
@@ -119,6 +125,7 @@ export const {
   setDayAdjustments,
   setPeriodAdjustments,
   setAssignedPlanByDay,
+  setAssignedPlanByPeriod,
   setAssignedPlan,
   setWeekDays,
   setNutritionPlan,

@@ -10,18 +10,18 @@ router.get(
   authController.protect,
   nutritionPlanController.getAllNutritionPlans
 );
-
 router.get(
-  "/:id",
-  authController.protect,
-  nutritionPlanController.getNutritionPlanById
-);
-
-router.get(
-  "/macros/:memberId/:date",
+  "/macros",
   authController.protect,
   nutritionPlanController.getMacrosByDate
 );
+router.get(
+  "/:id",
+authController.protect,  
+  nutritionPlanController.getNutritionPlanById
+);
+
+
 
 router.post(
   "/save",

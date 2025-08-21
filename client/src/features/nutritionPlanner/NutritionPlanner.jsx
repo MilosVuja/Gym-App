@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { saveNutritionPlan } from "../../app/api/nutritionApi";
 import dayjs from "dayjs";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import axios from "axios";
 import MacroCard from "../nutritionPlanner/components/MacroCard";
 import MacroSelectionPanel from "../nutritionPlanner/components/MacroSelectionPanel";
@@ -21,10 +22,11 @@ import {
   setDayAdjustments,
   setPeriodAdjustments,
   setAssignedPlanByDay,
-  setAssignedPlan,
+  setAssignedPlanByPeriod,
   setWeekDays,
   setNutritionPlan,
 } from "./nutritionSlice";
+dayjs.extend(isSameOrBefore);
 
 export default function NutritionPlanner() {
   const units = {
@@ -405,74 +407,44 @@ export default function NutritionPlanner() {
     );
   };
 
-  const saveMacrosForDate = (dateKey, macros) => {
-    const stored = localStorage.getItem("nutritionPlanByDate");
-    let nutritionByDate = {};
-    if (stored) {
-      try {
-        nutritionByDate = JSON.parse(stored);
-      } catch (e) {
-        console.warn("Failed to parse nutritionPlanByDate:", e);
-      }
-    }
-    nutritionByDate[dateKey] = macros;
-    localStorage.setItem(
-      "nutritionPlanByDate",
-      JSON.stringify(nutritionByDate)
-    );
-  };
+  const handleAssignPlan = () => {
+    if (!recommendedMacros) return;
 
-  const handleAssignPlan = async () => {
-    let baseMacros;
-    let payload = {};
+    let macrosToAssign;
 
     if (assignPeriod === "day") {
-      baseMacros =
+      macrosToAssign =
         selectedMacrosForDay === "current"
           ? appliedCustomMacros ?? recommendedMacros
           : adjustedDayMacros;
 
       const selectedDateObj = weekDays[selectedDayIndex]?.date;
-      if (!selectedDateObj || !baseMacros) return;
+      if (!selectedDateObj || !macrosToAssign) return;
 
       const selectedDate = dayjs(selectedDateObj).format("YYYY-MM-DD");
 
       dispatch(
         setAssignedPlanByDay({
           ...assignedPlanByDay,
-          [selectedDayIndex]: baseMacros,
+          [selectedDate]: macrosToAssign,
         })
       );
-
-      saveMacrosForDate(selectedDate, baseMacros);
-
-      payload = {
-        date: selectedDate,
-        period: "day",
-        macros: baseMacros,
-      };
     } else if (assignPeriod === "period") {
-      baseMacros =
-        selectedMacrosForPeriod === "current"
-          ? appliedCustomMacros ?? recommendedMacros
-          : recommendedMacros;
+      if (!periodStartDate || !periodEndDate) return;
 
-      if (!baseMacros || !periodStartDate || !periodEndDate) return;
+      const start = dayjs(periodStartDate);
+      const end = dayjs(periodEndDate);
+      const planByPeriod = {};
 
-      payload = {
-        startDate: periodStartDate,
-        endDate: periodEndDate,
-        period: "custom",
-        macros: baseMacros,
-      };
-    }
+      for (let d = start; d.isSameOrBefore(end, "day"); d = d.add(1, "day")) {
+        const dateStr = d.format("YYYY-MM-DD");
+        planByPeriod[dateStr] =
+          selectedMacrosForPeriod === "current"
+            ? appliedCustomMacros ?? recommendedMacros
+            : adjustedPeriodMacros;
+      }
 
-    try {
-      console.log("Sending payload: ", payload);
-      await saveNutritionPlan(payload);
-      dispatch(setAssignedPlan({ ...payload }));
-    } catch (err) {
-      console.error("Error saving plan:", err);
+      dispatch(setAssignedPlanByPeriod(planByPeriod));
     }
   };
 

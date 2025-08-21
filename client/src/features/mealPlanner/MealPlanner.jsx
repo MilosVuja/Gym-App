@@ -1,7 +1,8 @@
-import { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { v4 as uuidv4 } from "uuid";
+import { getMacrosByDate } from "../../app/api/nutritionApi";
 
 import TotalMacros from "./components/TotalMacros";
 import DatePicker from "react-datepicker";
@@ -31,53 +32,47 @@ export default function MealPlanner() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const assignedPlanByDay = useSelector(
-    (state) => state.nutrition.assignedPlanByDay
-  );
-  const weekDays = useSelector((state) => state.nutrition.weekDays);
   const meals = useSelector((state) => state.meals.meals);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [mealsTotals, setMealsTotals] = useState([]);
+  const [macrosForSelectedDate, setMacrosForSelectedDate] = useState([
+    0, 0, 0, 0,
+  ]);
+
+  const [noMacrosFound, setNoMacrosFound] = useState(false);
   const calendarRef = useRef(null);
-  const [, setNoMacrosFound] = useState(false);
-  const formatISODate = (date) => date.toISOString().split("T")[0];
-  const macrosForSelectedDate = useMemo(() => {
-    if (
-      !Array.isArray(weekDays) ||
-      !assignedPlanByDay ||
-      Object.keys(assignedPlanByDay).length === 0
-    ) {
-      return null;
-    }
-
-    const currentISO = formatISODate(currentDate);
-
-    const matchingIndex = weekDays.findIndex((day) => {
-      const dayISO = new Date(day.date).toISOString().split("T")[0];
-      return dayISO === currentISO;
-    });
-
-    if (matchingIndex === -1) return null;
-
-    const macros = assignedPlanByDay[matchingIndex];
-    if (!macros) return null;
-
-    return [
-      macros.kcal ?? macros.calories ?? 0,
-      macros.protein ?? 0,
-      macros.carbs ?? 0,
-      macros.fat ?? 0,
-    ];
-  }, [currentDate, assignedPlanByDay, weekDays]);
 
   useEffect(() => {
-    if (!macrosForSelectedDate) {
-      setNoMacrosFound(true);
-    } else {
-      setNoMacrosFound(false);
+    async function fetchMacros() {
+      try {
+        const isoDate = currentDate.toISOString().split("T")[0];
+        const response = await getMacrosByDate(isoDate);
+
+        console.log("Fetched macros for date", isoDate, response);
+
+        if (response && response.data) {
+          const macros = response.data;
+          setMacrosForSelectedDate([
+            macros.kcal ?? 0,
+            macros.protein ?? 0,
+            macros.carbs ?? 0,
+            macros.fat ?? 0,
+          ]);
+          setNoMacrosFound(false);
+        } else {
+          setMacrosForSelectedDate(null);
+          setNoMacrosFound(true);
+        }
+      } catch (err) {
+        console.error("Error fetching macros:", err);
+        setMacrosForSelectedDate(null);
+        setNoMacrosFound(true);
+      }
     }
-  }, [macrosForSelectedDate]);
+
+    fetchMacros();
+  }, [currentDate]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -116,13 +111,9 @@ export default function MealPlanner() {
 
   const handleMealTotalChange = (mealIndex, totals) => {
     setMealsTotals((prev) => {
+      const oldTotals = prev[mealIndex] || [0, 0, 0, 0];
+      if (oldTotals.every((v, i) => v === totals[i])) return prev;
       const updated = [...prev];
-      const prevTotals = updated[mealIndex];
-
-      if (prevTotals && prevTotals.every((val, idx) => val === totals[idx])) {
-        return prev;
-      }
-
       updated[mealIndex] = totals;
       return updated;
     });
@@ -130,11 +121,7 @@ export default function MealPlanner() {
 
   const grandTotals = [0, 0, 0, 0];
   mealsTotals.forEach((totals) => {
-    if (totals) {
-      totals.forEach((val, idx) => {
-        grandTotals[idx] += val;
-      });
-    }
+    if (totals) totals.forEach((val, idx) => (grandTotals[idx] += val));
   });
 
   const remainingMacros = macrosForSelectedDate
@@ -189,7 +176,7 @@ export default function MealPlanner() {
     <div className="max-w-4xl mx-auto px-4 py-6">
       <h1 className="text-2xl text-center font-bold mb-6">Meal Planner</h1>
 
-      {!macrosForSelectedDate ? (
+      {noMacrosFound ? (
         <div className="text-center p-6 bg-yellow-100 text-yellow-900 rounded border border-yellow-300">
           <p>No macros found for {formatDate(currentDate)}.</p>
           <button
@@ -279,17 +266,16 @@ export default function MealPlanner() {
               <TotalMacros label="Remaining macros:" values={remainingMacros} />
             </div>
           </div>
+
+          <div>
+            <PieChart
+              protein={grandTotals[1]}
+              carbs={grandTotals[2]}
+              fat={grandTotals[3]}
+            />
+          </div>
         </>
       )}
-      <div>
-        <div className="">
-          <PieChart
-            protein={grandTotals[1]}
-            carbs={grandTotals[2]}
-            fat={grandTotals[3]}
-          />
-        </div>
-      </div>
     </div>
   );
 }

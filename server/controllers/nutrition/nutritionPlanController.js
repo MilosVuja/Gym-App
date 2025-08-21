@@ -10,13 +10,23 @@ const getDayRange = (dateString) => {
   return { dayStart, dayEnd };
 };
 
-async function archivePlan(plan) {
+const archivePlan = async (plan) => {
   await NutritionHistory.create({
     memberId: plan.memberId,
     nutritionPlan: plan.toObject(),
   });
   await plan.deleteOne();
-}
+};
+
+const getDatesBetween = (startDate, endDate) => {
+  const dates = [];
+  let current = new Date(startDate);
+  while (current <= new Date(endDate)) {
+    dates.push(new Date(current));
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+};
 
 exports.getAllNutritionPlans = catchAsync(async (req, res) => {
   const { memberId } = req.query;
@@ -26,13 +36,11 @@ exports.getAllNutritionPlans = catchAsync(async (req, res) => {
       .json({ status: "fail", message: "memberId required" });
 
   const activePlans = await NutritionPlan.find({ memberId }).sort({ date: -1 });
-  res
-    .status(200)
-    .json({
-      status: "success",
-      results: activePlans.length,
-      data: activePlans,
-    });
+  res.status(200).json({
+    status: "success",
+    results: activePlans.length,
+    data: activePlans,
+  });
 });
 
 exports.getNutritionPlanById = catchAsync(async (req, res) => {
@@ -43,71 +51,35 @@ exports.getNutritionPlanById = catchAsync(async (req, res) => {
   res.status(200).json({ status: "success", data: plan });
 });
 
-exports.getMacrosByDate = catchAsync(async (req, res) => {
-  const { memberId, date } = req.params;
-  if (!memberId || !date)
+exports.getMacrosByDate = catchAsync(async (req, res, next) => {
+  const memberId = req.member.id;
+  const { date } = req.query;
+
+  if (!date) {
     return res
       .status(400)
-      .json({ status: "fail", message: "memberId and date required" });
+      .json({ status: "error", message: "Date is required" });
+  }
 
-  const { dayStart, dayEnd } = getDayRange(date);
-
-  const plan = await NutritionPlan.findOne({
-    memberId,
-    date: { $gte: dayStart, $lte: dayEnd },
-    isActive: true,
-  });
+  const plan = await NutritionPlan.findOne({ memberId });
 
   if (!plan) {
+    return res.status(404).json({ status: "error", message: "Plan not found" });
+  }
+
+  const macrosForDate = plan.perDayMacros.find(
+    (d) => new Date(d.date).toDateString() === new Date(date).toDateString()
+  );
+
+  if (!macrosForDate) {
     return res
       .status(404)
-      .json({
-        status: "fail",
-        message:
-          "No active nutrition plan found for this member on the given date",
-      });
+      .json({ status: "error", message: "Macros for this date not found" });
   }
 
-  let macrosForDay;
-
-  if (plan.mode === "perDay") {
-    macrosForDay = plan.perDayMacros.find(
-      (entry) =>
-        entry.date.toISOString().slice(0, 10) ===
-        dayStart.toISOString().slice(0, 10)
-    );
-    if (!macrosForDay) {
-      return res.status(404).json({
-        status: "fail",
-        message: "No macros saved for the specified day in perDay mode",
-      });
-    }
-  } else if (plan.mode === "period") {
-    if (
-      dayStart < new Date(plan.periodMacro.startDate) ||
-      dayEnd > new Date(plan.periodMacro.endDate)
-    ) {
-      return res.status(404).json({
-        status: "fail",
-        message: "Date is outside the saved period range",
-      });
-    }
-    macrosForDay = plan.periodMacro;
-  } else {
-    return res
-      .status(400)
-      .json({ status: "fail", message: "Invalid nutrition plan mode" });
-  }
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      type: macrosForDay.type,
-      adjustments: macrosForDay.adjustments,
-      finalMacros: macrosForDay.finalMacros,
-    },
-  });
+  res.status(200).json({ status: "success", data: macrosForDate.finalMacros });
 });
+
 exports.createOrUpdateNutritionPlan = catchAsync(async (req, res) => {
   const memberId = req.member._id;
   const {
@@ -135,24 +107,27 @@ exports.createOrUpdateNutritionPlan = catchAsync(async (req, res) => {
 
   const { dayStart, dayEnd } = getDayRange(date);
 
-  if (mode === "perDay") {
-    if (!perDayMacros || perDayMacros.length !== 7) {
+  let newPerDayMacros = perDayMacros || [];
+
+  if (mode === "period") {
+    if (!periodMacro || !periodMacro.startDate || !periodMacro.endDate) {
       return res.status(400).json({
         status: "fail",
-        message: "7 days of macros required for perDay mode",
+        message:
+          "periodMacro with startDate and endDate required for period mode",
       });
     }
-  } else if (mode === "period") {
-    if (!periodMacro) {
-      return res.status(400).json({
-        status: "fail",
-        message: "periodMacro required for period mode",
-      });
-    }
-  } else {
-    return res
-      .status(400)
-      .json({ status: "fail", message: "Invalid mode specified" });
+
+    const datesInPeriod = getDatesBetween(
+      periodMacro.startDate,
+      periodMacro.endDate
+    );
+    newPerDayMacros = datesInPeriod.map((d) => ({
+      date: d,
+      type: periodMacro.type || "customized",
+      adjustments: periodMacro.adjustments || { protein: 0, carbs: 0, fat: 0 },
+      finalMacros: periodMacro.finalMacros,
+    }));
   }
 
   let existingPlan = await NutritionPlan.findOne({
@@ -174,7 +149,7 @@ exports.createOrUpdateNutritionPlan = catchAsync(async (req, res) => {
     recommendedMacros,
     customizedMacros,
     customInput,
-    perDayMacros,
+    perDayMacros: newPerDayMacros,
     periodMacro,
     gender,
     height,
@@ -191,9 +166,8 @@ exports.createOrUpdateNutritionPlan = catchAsync(async (req, res) => {
 
 exports.updateNutritionPlan = catchAsync(async (req, res) => {
   const plan = await NutritionPlan.findById(req.params.id);
-  if (!plan) {
+  if (!plan)
     return res.status(404).json({ status: "fail", message: "Plan not found" });
-  }
 
   if (plan.isActive) {
     plan.isActive = false;
@@ -213,9 +187,8 @@ exports.updateNutritionPlan = catchAsync(async (req, res) => {
 
 exports.deleteNutritionPlan = catchAsync(async (req, res) => {
   const plan = await NutritionPlan.findById(req.params.id);
-  if (!plan) {
+  if (!plan)
     return res.status(404).json({ status: "fail", message: "Plan not found" });
-  }
 
   await archivePlan(plan);
 

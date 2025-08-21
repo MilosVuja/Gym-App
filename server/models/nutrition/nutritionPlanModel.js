@@ -24,7 +24,7 @@ const PerDayMacroSchema = new mongoose.Schema({
   finalMacros: { type: MacroSchema, required: true },
 });
 
-const PeriodMacroSchema = new mongoose.Schema({
+const PeriodMetaSchema = new mongoose.Schema({
   startDate: { type: Date, required: true },
   endDate: { type: Date, required: true },
   type: {
@@ -33,7 +33,6 @@ const PeriodMacroSchema = new mongoose.Schema({
     required: true,
   },
   adjustments: { type: AdjustmentSchema, default: {} },
-  finalMacros: { type: MacroSchema, required: true },
 });
 
 const NutritionPlanSchema = new mongoose.Schema(
@@ -43,7 +42,6 @@ const NutritionPlanSchema = new mongoose.Schema(
       ref: "Member",
       required: true,
     },
-
     gender: { type: String, enum: ["male", "female"], required: true },
     height: { type: Number, required: true },
     weight: { type: Number, required: true },
@@ -67,8 +65,10 @@ const NutritionPlanSchema = new mongoose.Schema(
     customizedMacros: { type: MacroSchema, default: {} },
 
     mode: { type: String, enum: ["perDay", "period"], required: true },
+
     perDayMacros: [PerDayMacroSchema],
-    periodMacro: { type: PeriodMacroSchema },
+
+    periodMeta: { type: PeriodMetaSchema },
 
     isActive: { type: Boolean, default: true },
     version: { type: Number, default: 1 },
@@ -77,4 +77,5 @@ const NutritionPlanSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
 module.exports = mongoose.model("NutritionPlan", NutritionPlanSchema);
