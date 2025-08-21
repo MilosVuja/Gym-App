@@ -80,7 +80,7 @@ exports.getMacrosByDate = catchAsync(async (req, res, next) => {
   res.status(200).json({ status: "success", data: macrosForDate.finalMacros });
 });
 
-exports.createOrUpdateNutritionPlan = catchAsync(async (req, res) => {
+exports.createNutritionPlan = catchAsync(async (req, res) => {
   const memberId = req.member._id;
   const {
     date,
@@ -108,20 +108,15 @@ exports.createOrUpdateNutritionPlan = catchAsync(async (req, res) => {
   const { dayStart, dayEnd } = getDayRange(date);
 
   let newPerDayMacros = perDayMacros || [];
-
   if (mode === "period") {
     if (!periodMacro || !periodMacro.startDate || !periodMacro.endDate) {
       return res.status(400).json({
         status: "fail",
-        message:
-          "periodMacro with startDate and endDate required for period mode",
+        message: "periodMacro with startDate and endDate required for period mode",
       });
     }
 
-    const datesInPeriod = getDatesBetween(
-      periodMacro.startDate,
-      periodMacro.endDate
-    );
+    const datesInPeriod = getDatesBetween(periodMacro.startDate, periodMacro.endDate);
     newPerDayMacros = datesInPeriod.map((d) => ({
       date: d,
       type: periodMacro.type || "customized",
@@ -130,16 +125,11 @@ exports.createOrUpdateNutritionPlan = catchAsync(async (req, res) => {
     }));
   }
 
-  let existingPlan = await NutritionPlan.findOne({
-    memberId,
-    date: { $gte: dayStart, $lte: dayEnd },
-    isActive: true,
-  });
-
-  if (existingPlan) {
-    existingPlan.isActive = false;
-    await existingPlan.save();
-    await archivePlan(existingPlan);
+  const activePlans = await NutritionPlan.find({ memberId, isActive: true });
+  for (const plan of activePlans) {
+    plan.isActive = false;
+    await plan.save();
+    await archivePlan(plan);
   }
 
   const newPlan = await NutritionPlan.create({
@@ -163,6 +153,7 @@ exports.createOrUpdateNutritionPlan = catchAsync(async (req, res) => {
 
   res.status(201).json({ status: "success", data: newPlan });
 });
+
 
 exports.updateNutritionPlan = catchAsync(async (req, res) => {
   const plan = await NutritionPlan.findById(req.params.id);

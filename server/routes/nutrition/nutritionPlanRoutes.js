@@ -26,7 +26,7 @@ authController.protect,
 router.post(
   "/save",
   authController.protect,
-  nutritionPlanController.createOrUpdateNutritionPlan
+  nutritionPlanController.createNutritionPlan
 );
 
 router.patch(
