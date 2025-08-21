@@ -22,7 +22,7 @@ import {
   setDayAdjustments,
   setPeriodAdjustments,
   setAssignedPlanByDay,
-  setAssignedPlanByPeriod,
+  setAssignedPlan,
   setWeekDays,
   setNutritionPlan,
 } from "./nutritionSlice";
@@ -407,7 +407,7 @@ export default function NutritionPlanner() {
     );
   };
 
-  const handleAssignPlan = () => {
+  const handleAssignPlan = async () => {
     if (!recommendedMacros) return;
 
     let macrosToAssign;
@@ -421,12 +421,10 @@ export default function NutritionPlanner() {
       const selectedDateObj = weekDays[selectedDayIndex]?.date;
       if (!selectedDateObj || !macrosToAssign) return;
 
-      const selectedDate = dayjs(selectedDateObj).format("YYYY-MM-DD");
-
       dispatch(
         setAssignedPlanByDay({
           ...assignedPlanByDay,
-          [selectedDate]: macrosToAssign,
+          [selectedDayIndex]: macrosToAssign,
         })
       );
     } else if (assignPeriod === "period") {
@@ -444,7 +442,7 @@ export default function NutritionPlanner() {
             : adjustedPeriodMacros;
       }
 
-      dispatch(setAssignedPlanByPeriod(planByPeriod));
+      dispatch(setAssignedPlan(planByPeriod));
     }
   };
 
@@ -588,12 +586,12 @@ export default function NutritionPlanner() {
         adjustedPeriodMacros,
       });
 
-      console.log("Payload to save:", payload);
-
       const result = await saveNutritionPlan(payload);
 
       dispatch(setNutritionPlan(result));
-      console.log("Plan saved successfully:", result);
+
+      dispatch(setAssignedPlanByDay({}));
+      dispatch(setAssignedPlan({}));
 
       navigate("/members/meal-planner");
     } catch (error) {
@@ -922,33 +920,43 @@ export default function NutritionPlanner() {
         {assignPeriod === "day" && (
           <div>
             <div className="flex justify-center gap-6 mb-4 text-black">
-              {weekDays.map(({ dayName, date }, index) => (
-                <div key={dayName} className="flex flex-col items-center">
-                  <button
-                    onClick={() => handleDaySelect(index)}
-                    className={`border rounded px-3 py-1 text-sm ${
-                      index === selectedDayIndex
-                        ? "bg-blue-600"
-                        : "bg-gray-100 hover:bg-gray-200"
-                    }`}
-                  >
-                    {dayName}
-                    <br />
-                    <span className="text-xs font-normal text-gray-600">
-                      {date.toLocaleDateString()}
-                    </span>
-                  </button>
+              {weekDays.map(({ dayName, date }, index) => {
+                const isSelected = index === selectedDayIndex;
+                const isAssigned = Boolean(assignedPlanByDay[index]);
 
-                  {assignedPlanByDay[index] && (
-                    <div className="mt-2 w-full max-w-xs">
-                      <MacroCard
-                        macros={assignedPlanByDay[index]}
-                        className="border gap-2 rounded px-3 text-xs text-center shadow-sm"
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
+                const buttonClasses = [
+                  "border rounded px-3 py-1 text-sm",
+                  isSelected ? "bg-blue-600 text-black" : "",
+                  !isSelected && isAssigned ? "bg-blue-600 text-black" : "",
+                  !isSelected && !isAssigned
+                    ? "bg-gray-100 hover:bg-gray-200"
+                    : "",
+                ].join(" ");
+
+                return (
+                  <div key={dayName} className="flex flex-col items-center">
+                    <button
+                      onClick={() => handleDaySelect(index)}
+                      className={buttonClasses}
+                    >
+                      {dayName}
+                      <br />
+                      <span className="text-xs font-normal text-black">
+                        {date.toLocaleDateString()}
+                      </span>
+                    </button>
+
+                    {isAssigned && (
+                      <div className="mt-2 w-full max-w-xs">
+                        <MacroCard
+                          macros={assignedPlanByDay[index]}
+                          className="border gap-2 rounded px-3 text-xs text-center shadow-sm"
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <MacroSelectionPanel
