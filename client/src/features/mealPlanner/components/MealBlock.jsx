@@ -119,20 +119,22 @@ export default function MealBlock({
         />
       )}
       {!isFavoriteMode && (
-        <div className="text-right mt-2 mx-3">
+        <div className="flex justify-end mt-2 gap-2 mx-3">
           <button
             onClick={handleAddIngredientClick}
-            className="text-sm text-blue-500"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
             title="Add ingredient"
           >
-            Add ingredient
+            <IoIosAddCircle className="w-4 h-4" />
+            Add Ingredient
           </button>
           <button
             onClick={handleAddIngredientClick}
-            className="text-sm text-blue-500"
-            title="Add ingredient"
+            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            title="Add favorite meal"
           >
-            Add Favorite meal
+            <IoIosAddCircle className="w-4 h-4 text-white" />
+            Add Favorite Meal
           </button>
         </div>
       )}
