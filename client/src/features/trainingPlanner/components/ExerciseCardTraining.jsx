@@ -5,6 +5,8 @@ export default function ExerciseCardTraining({
   showRemoveButton,
   onRemove,
   draggable = true,
+  numberSize = "normal",
+  size = "normal",
   onDragStart,
   onClick,
 }) {
@@ -17,7 +19,9 @@ export default function ExerciseCardTraining({
         ((e) =>
           e.dataTransfer.setData("application/json", JSON.stringify(exercise)))
       }
-      className="relative border border-gray-300 p-2.5 m-2.5 rounded-lg w-[320px] cursor-grab select-none shadow-sm"
+      className={`relative border border-gray-300 p-2.5 m-2.5 rounded-lg cursor-grab select-none shadow-sm  ${
+        size === "small" ? "w-[250px] h-[50]" : "w-[320px]"
+      }`}
     >
       {showRemoveButton && (
         <button
@@ -33,17 +37,34 @@ export default function ExerciseCardTraining({
         </button>
       )}
 
-      <h3 className="text-lg text-center font-semibold mb-2 pr-6">{exercise.name}</h3>
+      <h3 className="text-lg text-center font-semibold mb-2 pr-6">
+        {exercise.name}
+      </h3>
 
-      <div className="relative">
+      <div
+        className={`relative ${
+          size === "small" ? "flex justify-center items-center" : ""
+        }`}
+      >
         <img
           src={exercise.thumbnail || "/default-thumbnail.jpg"}
           alt={exercise.name}
-          className="w-[300px] h-[200px] object-cover rounded-lg"
+          className={`" object-cover rounded-lg ${
+            size === "small"
+              ? "w-[200px] h-[125px] flex justify-center items-center"
+              : "w-[300px] h-[200px]"
+          }`}
         />
 
         {showPosition && position != null && (
-          <div className="absolute bottom-2 left-2 bg-blue-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center shadow">
+          <div
+            className={`absolute  text-white font-bold rounded-full flex items-center justify-center shadow
+      ${
+        numberSize === "small"
+          ? "text-xs bg-blue-900 rounded-full w-5 h-5 flex items-center justify-center  bottom-0 left-0 bg-red-600"
+          : "text-sm  w-7 h-7  bottom-2 left-2 bg-blue-600"
+      } `}
+          >
             {position}
           </div>
         )}
