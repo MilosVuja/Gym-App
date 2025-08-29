@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import SvgMuscles from "../../common/SvgMuscles";
 import ExerciseCardTraining from "./components/ExerciseCardTraining";
-import ExerciseModal from "./components/ExerciseModal";
 import CheckboxDropdown from "./components/CheckboxDropdown";
 import SuperSetCard from "./components/SuperSetCard";
 import { FaEdit, FaTrash } from "react-icons/fa";
-import { v4 as uuidv4 } from "uuid";
 
 import { useDragAndDrop } from "../../hooks/trainingPlaner/useDragAndDrop";
+
+import TabSwitcher from "../ingredientPicker/components/TabSwitcher";
+import StrengthPlanner from "./components/StrengthPlanner";
+import CardioPlanner from "./components/CardioPlanner";
 
 export default function TrainingPlanner() {
   const [duration, setDuration] = useState("");
@@ -43,10 +44,25 @@ export default function TrainingPlanner() {
   const [filters, setFilters] = useState({
     equipment: [],
     movement: [],
-    trainingType: "",
-    category: "",
+    trainingType: [],
+    category: [],
     search: "",
   });
+
+  const [activeTab, setActiveTab] = useState("strength");
+
+  const tabs = [
+    { id: "strength", label: "Strength" },
+    { id: "cardio", label: "Cardio" },
+    { id: "strengthCardio", label: "Strength + Cardio" },
+  ];
+
+  const [cardioType, setCardioType] = useState("");
+  const [numExercises, setNumExercises] = useState(5);
+  const [exerciseDuration, setExerciseDuration] = useState(60);
+  const [restDuration, setRestDuration] = useState(120);
+  const [numRounds, setNumRounds] = useState(5);
+  const [cardioValidate, setCardioValidate] = useState(null);
 
   const formatDate = (date) =>
     date.toLocaleDateString(undefined, {
@@ -286,12 +302,26 @@ export default function TrainingPlanner() {
   }, []);
 
   const handleShowExercisesClick = () => {
-    if (!selectedMuscles?.length) {
-      alert("Please select at least one muscle.");
-      return;
+    if (activeTab === "strength") {
+      if (!selectedMuscles?.length) {
+        alert("Please select at least one muscle.");
+        return;
+      }
+      setShowContainers(true);
+      fetchExercises();
     }
-    setShowContainers(true);
-    fetchExercises();
+
+    if (activeTab === "cardio" && cardioValidate) {
+      const valid = cardioValidate();
+      if (!valid) return;
+
+      setFilters((prev) => ({
+        ...prev,
+        trainingType: ["Cardio"],
+      }));
+
+      setShowContainers(true);
+    }
   };
 
   const handleRemove = (id) => {
@@ -722,253 +752,287 @@ export default function TrainingPlanner() {
         </div>
       </section>
 
-      <div id="muscle-select" className="flex gap-10">
-        <SvgMuscles
-          selected={selected}
-          filledMuscles={filledMuscles}
-          fetchMuscleInfo={fetchMuscleInfo}
+      <>
+        <p>Choose your training type for day/s:</p>
+        <TabSwitcher
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={setActiveTab}
         />
-        <div className="muscle-description max-w-md">
-          <p id="muscle-name">
-            <strong>Muscle Name:</strong>{" "}
-            <span id="muscle-name-value">
-              {selectedMuscleInfo?.name || "—"}
-            </span>
-          </p>
-          <p id="latin-name">
-            <strong>Latin Name:</strong>{" "}
-            <span>{selectedMuscleInfo?.latinName || "—"}</span>
-          </p>
-          <p id="muscle-desc">
-            <strong>Description:</strong>{" "}
-            <span id="muscle-desc-value">
-              {selectedMuscleInfo?.description || "—"}
-            </span>
-          </p>
-          <p id="muscle-movements">
-            <strong>Movements:</strong>{" "}
-            <span id="muscle-movements-value">
-              {selectedMuscleInfo?.movements || "—"}
-            </span>
-          </p>
+        {activeTab === "strength" && (
+          <StrengthPlanner
+            selected={selected}
+            filledMuscles={filledMuscles}
+            fetchMuscleInfo={fetchMuscleInfo}
+            selectedMuscleInfo={selectedMuscleInfo}
+            addMuscle={addMuscle}
+            trainingDays={trainingDays}
+            selectedMuscles={selectedMuscles}
+            removeMuscle={removeMuscle}
+            modalOpen={modalOpen}
+            selectedExercise={selectedExercise}
+            setModalOpen={setModalOpen}
+            exerciseModalsData={exerciseModalsData}
+            handleModalSave={handleModalSave}
+          />
+        )}
+
+        {activeTab === "cardio" && (
+          <CardioPlanner
+            showContainers={showContainers}
+            exercises={exercises}
+            chosenExercises={chosenExercises}
+            handleDropIntoChosen={handleDropIntoChosen}
+            handleDragStart={handleDragStart}
+            handleDropReorder={handleDropReorder}
+            handleAddSuperset={handleAddSuperset}
+            handleRemoveSuperset={handleRemoveSuperset}
+            handleRemoveFromSuperset={handleRemoveFromSuperset}
+            handleDropIntoSuperset={handleDropIntoSuperset}
+            handleDropFromExternal={handleDropFromExternal}
+            filters={filters}
+            handleFilterChange={handleFilterChange}
+            modalOpen={modalOpen}
+            setModalOpen={setModalOpen}
+            selectedExercise={selectedExercise}
+            setSelectedExercise={setSelectedExercise}
+            exerciseModalsData={exerciseModalsData}
+            handleModalSave={handleModalSave}
+            cardioType={cardioType}
+            setCardioType={setCardioType}
+            numExercises={numExercises}
+            setNumExercises={setNumExercises}
+            exerciseDuration={exerciseDuration}
+            setExerciseDuration={setExerciseDuration}
+            restDuration={restDuration}
+            setRestDuration={setRestDuration}
+            numRounds={numRounds}
+            setNumRounds={setNumRounds}
+            setCardioValidate={setCardioValidate}
+          />
+        )}
+
+        {activeTab === "strengthCardio" && <></>}
+        <div className="mt-6">
           <button
             type="button"
-            id="add-muscle-button"
-            onClick={addMuscle}
-            className="mt-4 bg-red-700 px-4 py-2 rounded hover:bg-red-800"
+            id="choose-exercises-button"
+            className="bg-blue-600 px-6 py-2 rounded hover:bg-blue-700"
+            onClick={handleShowExercisesClick}
           >
-            Add Muscle to Training
+            Show Exercises
           </button>
         </div>
+        {showContainers && (
+          <>
+            <div id="exercise-filters" className="flex flex-wrap gap-4 mt-4">
+              <input
+                type="text"
+                placeholder="Search exercise..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange("search", e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md w-100"
+              />
 
-        <div id="selected-muscles">
-          <h4
-            id="muscle-selection-heading"
-            className="text-lg font-semibold mb-2"
-          >
-            Muscle Selection for:{" "}
-            {trainingDays.length > 0 ? trainingDays.join(", ") : "—"}
-          </h4>
-          <ul className="list-disc list-inside">
-            {selectedMuscles.map((m) => (
-              <li
-                key={m.latinName}
-                className="flex items-center justify-between"
-              >
-                <span>{m.name}</span>
-                <button
-                  type="button"
-                  onClick={() => removeMuscle(m.name)}
-                  className="ml-4 text-sm text-red-600 hover:text-red-800"
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
+              <CheckboxDropdown
+                title="Training Type"
+                options={[
+                  "Strength",
+                  "Cardio",
+                  "Flexibility",
+                  "Balance",
+                  "Endurance",
+                  "Power",
+                  "Mobility",
+                  "Conditioning",
+                ]}
+                selected={filters.trainingType}
+                onChange={(val) =>
+                  handleFilterChange("trainingType", val, true)
+                }
+              />
+              <CheckboxDropdown
+                title="Category"
+                options={[
+                  "Bodybuilding",
+                  "Powerlifting",
+                  "Weightlifting",
+                  "Calisthenics",
+                  "CrossFit",
+                  "Functional Training",
+                  "Circuit/HIIT",
+                  "Sports Performance",
+                  "Yoga/Pilates",
+                  "Rehabilitation/Preventive",
+                  "Warm-up/Cool-down",
+                  "Martial Arts",
+                  "General Fitness",
+                ]}
+                selected={filters.category}
+                onChange={(val) => handleFilterChange("category", val, true)}
+              />
 
-      <div className="mt-6">
-        <button
-          type="button"
-          id="choose-exercises-button"
-          className="bg-blue-600 px-6 py-2 rounded hover:bg-blue-700"
-          onClick={handleShowExercisesClick}
-        >
-          Show Exercises
-        </button>
-      </div>
+              <CheckboxDropdown
+                title="Movement"
+                options={[
+                  "Push",
+                  "Pull",
+                  "Squat",
+                  "Hinge",
+                  "Lunge",
+                  "Carry",
+                  "Rotation",
+                  "Anti-Rotation",
+                  "Gait/Locomotion",
+                  "Jump/Plyometrics",
+                ]}
+                selected={filters.movement}
+                onChange={(val) => handleFilterChange("movement", val, true)}
+              />
 
-      {showContainers && (
-        <>
-          <div id="exercise-filters" className="flex flex-wrap gap-4 mt-4">
-            <input
-              type="text"
-              placeholder="Search exercise..."
-              value={filters.search}
-              onChange={(e) => handleFilterChange("search", e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md w-48"
-            />
-
-            <CheckboxDropdown
-              title="Equipment"
-              options={["Bodyweight", "Dumbbell", "Barbell", "Machine"]}
-              selected={filters.equipment}
-              onChange={(val) => handleFilterChange("equipment", val, true)}
-            />
-
-            <CheckboxDropdown
-              title="Movement"
-              options={["Push", "Pull", "Squat", "Hinge", "Lunge", "Carry"]}
-              selected={filters.movement}
-              onChange={(val) => handleFilterChange("movement", val, true)}
-            />
-
-            <select
-              value={filters.trainingType}
-              onChange={(e) =>
-                handleFilterChange("trainingType", e.target.value)
-              }
-              className="px-3 py-2 border border-gray-300 rounded-md w-48"
-            >
-              <option value="">Training Type</option>
-              <option value="Strength">Strength</option>
-              <option value="Cardio">Cardio</option>
-            </select>
-
-            <select
-              value={filters.category}
-              onChange={(e) => handleFilterChange("category", e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md w-48"
-            >
-              <option value="">Category</option>
-              <option value="Bodybuilding">Bodybuilding</option>
-              <option value="Calisthenics">Calisthenics</option>
-            </select>
-          </div>
-
-          <div id="exercises-container" className="mt-5 flex flex-wrap gap-4">
-            {exercises.length === 0 ? (
-              <p className="text-gray-600">
-                No exercises found for the selected muscles.
-              </p>
-            ) : (
-              exercises.map((exercise, index) => (
-                <div
-                  key={exercise._id}
-                  draggable
-                  onDragStart={(e) =>
-                    handleDragStart(e, exercise, { type: "external" })
-                  }
-                >
-                  <ExerciseCardTraining
-                    exercise={exercise}
-                    index={index}
-                    draggable
-                  />
-                </div>
-              ))
-            )}
-          </div>
-
-          <div
-            id="chosen-exercises"
-            className="mt-6 rounded-xl shadow-md border border-gray-200 p-4 space-y-4 flex flex-wrap gap-4"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => handleDropIntoChosen(e)}
-          >
-            <div className="flex justify-between items-center w-full">
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                Your Chosen Exercises
-              </h3>
-              <button
-                onClick={handleAddSuperset}
-                className="bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700"
-              >
-                + Add Superset
-              </button>
+              <CheckboxDropdown
+                title="Equipment"
+                options={[
+                  "Bodyweight",
+                  "Dumbbell",
+                  "Barbell",
+                  "Machine",
+                  "Kettlebell",
+                  "Cable",
+                  "Band",
+                  "EZ-Bar",
+                  "Medicine Ball",
+                  "Smith Machine",
+                  "Pull-Up Bar",
+                  "Rowing Machine",
+                  "Treadmill",
+                  "Stationary Bike",
+                  "Elliptical",
+                  "Jump Rope",
+                  "Battle Ropes",
+                  "Sled",
+                  "Plyo Box",
+                  "Ab Wheel",
+                  "Weight Vest",
+                  "Resistance Bands",
+                  "TRX",
+                  "Sandbag",
+                  "SkiErg",
+                  "Assault Bike",
+                  "Jump Box",
+                  "Slam Ball",
+                  "Other",
+                ]}
+                selected={filters.equipment}
+                onChange={(val) => handleFilterChange("equipment", val, true)}
+              />
             </div>
 
-            {chosenExercises.length === 0 ? (
-              <p className="text-gray-500 italic w-full">
-                No exercises added yet. Drag them here!
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-4 items-start w-full">
-                {chosenExercises.map((exercise, index) => (
+            <div id="exercises-container" className="mt-5 flex flex-wrap gap-4">
+              {exercises.length === 0 ? (
+                <p className="text-gray-600">
+                  No exercises found for the selected muscles.
+                </p>
+              ) : (
+                exercises.map((exercise, index) => (
                   <div
                     key={exercise._id}
-                    className="relative"
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => handleDropReorder(e, index)}
                     draggable
                     onDragStart={(e) =>
-                      handleDragStart(e, exercise, { type: "chosen" })
+                      handleDragStart(e, exercise, { type: "external" })
                     }
                   >
-                    {exercise.type === "superset" ? (
-                      <SuperSetCard
-                        superset={exercise}
-                        supersetNumber={
-                          chosenExercises
-                            .filter((e) => e.type === "superset")
-                            .indexOf(exercise) + 1
-                        }
-                        position={index + 1}
-                        onDropExercise={(e, { newExercises }) =>
-                          handleDropIntoSuperset(exercise._id, newExercises)
-                        }
-                        onRemoveExercise={handleRemoveFromSuperset}
-                        onRemoveSuperset={() =>
-                          handleRemoveSuperset(exercise._id)
-                        }
-                        onDragStart={handleDragStart}
-                        onDragOver={handleDragOver}
-                        setSelectedExercise={setSelectedExercise}
-                        onDropFromExternal={handleDropFromExternal}
-                        setModalOpen={setModalOpen}
-                        handleDropIntoSuperset={handleDropIntoSuperset}
-                        numberSize="small"
-                      />
-                    ) : (
-                      <ExerciseCardTraining
-                        exercise={exercise}
-                        index={index}
-                        position={index + 1}
-                        showPosition
-                        showRemoveButton
-                        onRemove={handleRemove}
-                        onClick={() => {
-                          setSelectedExercise(exercise);
-                          setModalOpen(true);
-                        }}
-                      />
-                    )}
+                    <ExerciseCardTraining
+                      exercise={exercise}
+                      index={index}
+                      draggable
+                    />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
+                ))
+              )}
+            </div>
 
-      {modalOpen && selectedExercise && (
-        <ExerciseModal
-          exerciseId={selectedExercise._id}
-          show={modalOpen}
-          onClose={() => setModalOpen(false)}
-          exerciseName={selectedExercise.name}
-          videoSrc={selectedExercise.videoUrl}
-          initialRows={
-            exerciseModalsData[selectedExercise._id]?.rows || [
-              { id: uuidv4(), reps: 0, weight: 0, rest: 0, dropsets: [] },
-            ]
-          }
-          initialInstructions={selectedExercise.instructions || ""}
-          onSave={(data) => handleModalSave(selectedExercise._id, data)}
-        />
-      )}
+            <div
+              id="chosen-exercises"
+              className="mt-6 rounded-xl shadow-md border border-gray-200 p-4 space-y-4 flex flex-wrap gap-4"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => handleDropIntoChosen(e)}
+            >
+              <div className="flex justify-between items-center w-full">
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">
+                  Your Chosen Exercises
+                </h3>
+                <button
+                  onClick={handleAddSuperset}
+                  className="bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700"
+                >
+                  + Add Superset
+                </button>
+              </div>
+
+              {chosenExercises.length === 0 ? (
+                <p className="text-gray-500 italic w-full">
+                  No exercises added yet. Drag them here!
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-4 items-start w-full">
+                  {chosenExercises.map((exercise, index) => (
+                    <div
+                      key={exercise._id}
+                      className="relative"
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={(e) => handleDropReorder(e, index)}
+                      draggable
+                      onDragStart={(e) =>
+                        handleDragStart(e, exercise, { type: "chosen" })
+                      }
+                    >
+                      {exercise.type === "superset" ? (
+                        <SuperSetCard
+                          superset={exercise}
+                          supersetNumber={
+                            chosenExercises
+                              .filter((e) => e.type === "superset")
+                              .indexOf(exercise) + 1
+                          }
+                          position={index + 1}
+                          onDropExercise={(_e, { newExercises }) =>
+                            handleDropIntoSuperset(exercise._id, newExercises)
+                          }
+                          onRemoveExercise={handleRemoveFromSuperset}
+                          onRemoveSuperset={() =>
+                            handleRemoveSuperset(exercise._id)
+                          }
+                          onDragStart={handleDragStart}
+                          onDragOver={handleDragOver}
+                          setSelectedExercise={setSelectedExercise}
+                          onDropFromExternal={handleDropFromExternal}
+                          setModalOpen={setModalOpen}
+                          handleDropIntoSuperset={handleDropIntoSuperset}
+                          numberSize="small"
+                        />
+                      ) : (
+                        <ExerciseCardTraining
+                          exercise={exercise}
+                          index={index}
+                          position={index + 1}
+                          showPosition
+                          showRemoveButton
+                          onRemove={handleRemove}
+                          onClick={() => {
+                            setSelectedExercise(exercise);
+                            setModalOpen(true);
+                          }}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </>
 
       <button
         onClick={handleSaveDayToLocalStorage}

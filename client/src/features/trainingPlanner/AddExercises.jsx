@@ -262,32 +262,6 @@ export default function AddExercises() {
           onAdd={() => addDynamicField("muscles")}
           onRemove={removeField}
         />
-
-        <div className="flex gap-4">
-          <div className="w-1/2">
-            <DynamicSelects
-              label="Equipment"
-              field="equipment"
-              values={formData.equipment}
-              options={exerciseOptions.equipment}
-              onChange={handleDynamicChange}
-              onAdd={() => addDynamicField("equipment")}
-              onRemove={removeField}
-            />
-          </div>
-          <div className="w-1/2">
-            <DynamicSelects
-              label="Movement"
-              field="movement"
-              values={formData.movement}
-              options={exerciseOptions.movement}
-              onChange={handleDynamicChange}
-              onAdd={() => addDynamicField("movement")}
-              onRemove={removeField}
-            />
-          </div>
-        </div>
-
         <div className="flex gap-4">
           <div className="w-1/2">
             <DynamicSelects
@@ -308,6 +282,31 @@ export default function AddExercises() {
               options={exerciseOptions.category}
               onChange={handleDynamicChange}
               onAdd={() => addDynamicField("category")}
+              onRemove={removeField}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          <div className="w-1/2">
+            <DynamicSelects
+              label="Movement"
+              field="movement"
+              values={formData.movement}
+              options={exerciseOptions.movement}
+              onChange={handleDynamicChange}
+              onAdd={() => addDynamicField("movement")}
+              onRemove={removeField}
+            />
+          </div>
+          <div className="w-1/2">
+            <DynamicSelects
+              label="Equipment"
+              field="equipment"
+              values={formData.equipment}
+              options={exerciseOptions.equipment}
+              onChange={handleDynamicChange}
+              onAdd={() => addDynamicField("equipment")}
               onRemove={removeField}
             />
           </div>
