@@ -42,7 +42,7 @@ exports.getFilteredExercises = catchAsync(async (req, res, next) => {
   if (trainingType) filter.trainingType = trainingType;
   if (category) filter.category = category;
 
-  if (muscles) {
+  if (muscles && muscles.trim().length > 0) {
     const muscleNames = muscles.split(",").map((name) => name.trim());
 
     const muscleDocs = await Muscles.find({

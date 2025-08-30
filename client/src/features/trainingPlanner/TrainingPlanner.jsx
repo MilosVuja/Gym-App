@@ -247,41 +247,66 @@ export default function TrainingPlanner() {
     });
   };
 
-  const fetchExercises = useCallback(() => {
-    const muscleNames = selectedMuscles.map((m) => m.name);
-    const queryParams = new URLSearchParams();
-
-    if (muscleNames.length > 0)
-      queryParams.set("muscles", muscleNames.join(","));
-
-    Object.entries(filters).forEach(([key, val]) => {
-      if (Array.isArray(val) && val.length > 0) {
-        queryParams.set(key, val.join(","));
-      } else if (typeof val === "string" && val.trim() !== "") {
-        queryParams.set(key, val.trim());
-      }
-    });
-
-    const url = `http://localhost:3000/api/v1/exercises/filter?${queryParams.toString()}`;
-    console.log("Fetching exercises from:", url);
-
-    fetch(url)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === "success") {
-          setExercises(data.data);
-        } else {
-          alert("Failed to fetch exercises.");
-        }
-      })
-      .catch(() => alert("An error occurred while fetching exercises."));
-  }, [selectedMuscles, filters]);
-
   useEffect(() => {
-    if (showContainers && selectedMuscles.length > 0) {
-      fetchExercises();
+  if (activeTab === "Cardio") {
+    setFilters((prev) => ({
+      ...prev,
+      trainingType: "Cardio",
+    }));
+  }
+}, [activeTab]);
+
+
+const fetchExercises = useCallback(() => {
+  const queryParams = new URLSearchParams();
+
+  if (filters.trainingType) {
+    queryParams.set("trainingType", filters.trainingType);
+  }
+
+  if (filters.trainingType === "Strength" && selectedMuscles.length > 0) {
+    const muscleNames = selectedMuscles.map((m) => m.name);
+    queryParams.set("muscles", muscleNames.join(","));
+  }
+
+  Object.entries(filters).forEach(([key, val]) => {
+    if (key === "muscles" || key === "trainingType") return;
+
+    if (Array.isArray(val) && val.length > 0) {
+      queryParams.set(key, val.join(","));
+    } else if (typeof val === "string" && val.trim() !== "") {
+      queryParams.set(key, val.trim());
     }
-  }, [showContainers, selectedMuscles, fetchExercises]);
+  });
+
+  const url = `http://localhost:3000/api/v1/exercises/filter?${queryParams.toString()}`;
+  console.log("Fetching exercises from:", url);
+
+  fetch(url)
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.status === "success") {
+        setExercises(data.data);
+      } else {
+        alert("Failed to fetch exercises.");
+      }
+    })
+    .catch(() => alert("An error occurred while fetching exercises."));
+}, [selectedMuscles, filters]);
+
+
+
+useEffect(() => {
+  if (!showContainers) return;
+
+  if (filters.trainingType === "Strength") {
+    if (selectedMuscles.length === 0) return;
+  }
+
+  fetchExercises();
+}, [showContainers, selectedMuscles, filters.trainingType, fetchExercises]);
+
+
 
   useEffect(() => {
     const daysFromStorage = [];
@@ -301,28 +326,44 @@ export default function TrainingPlanner() {
     setSavedDays(daysFromStorage);
   }, []);
 
-  const handleShowExercisesClick = () => {
-    if (activeTab === "strength") {
-      if (!selectedMuscles?.length) {
-        alert("Please select at least one muscle.");
-        return;
-      }
-      setShowContainers(true);
-      fetchExercises();
+const handleShowExercisesClick = () => {
+  if (activeTab === "strength") {
+    if (!selectedMuscles?.length) {
+      alert("Please select at least one muscle.");
+      return;
     }
+    setFilters((prev) => ({
+      ...prev,
+      trainingType: "Strength",
+    }));
 
-    if (activeTab === "cardio" && cardioValidate) {
+    setShowContainers(true);
+  }
+
+  if (activeTab === "cardio") {
+    if (cardioValidate) {
       const valid = cardioValidate();
       if (!valid) return;
-
-      setFilters((prev) => ({
-        ...prev,
-        trainingType: ["Cardio"],
-      }));
-
-      setShowContainers(true);
     }
-  };
+
+    setFilters((prev) => ({
+      ...prev,
+      trainingType: "Cardio",
+    }));
+
+    setShowContainers(true);
+  }
+
+  if (activeTab === "strengthCardio") {
+    setFilters((prev) => ({
+      ...prev,
+      trainingType: "Strength+Cardio",
+    }));
+
+    setShowContainers(true);
+  }
+};
+
 
   const handleRemove = (id) => {
     setChosenExercises((prev) => prev.filter((ex) => ex._id !== id));
