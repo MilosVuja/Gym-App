@@ -54,7 +54,6 @@ export default function TrainingPlanner() {
   const tabs = [
     { id: "strength", label: "Strength" },
     { id: "cardio", label: "Cardio" },
-    { id: "strengthCardio", label: "Strength + Cardio" },
   ];
 
   const [cardioType, setCardioType] = useState("");
@@ -120,12 +119,6 @@ export default function TrainingPlanner() {
       })
     );
   }, [showContainers]);
-
-  useEffect(() => {
-    const storedDays = getSavedDaysFromLocalStorage();
-    console.log("Saved Days:", storedDays);
-    setSavedDays(storedDays);
-  }, []);
 
   useEffect(() => {
     const savedDays = getSavedDaysFromLocalStorage();
@@ -319,7 +312,7 @@ useEffect(() => {
       "Saturday",
       "Sunday",
     ].forEach((day) => {
-      if (localStorage.getItem(`training_day${day}`)) {
+      if (localStorage.getItem(`training_day_${day}`)) {
         daysFromStorage.push(day);
       }
     });
@@ -349,15 +342,6 @@ const handleShowExercisesClick = () => {
     setFilters((prev) => ({
       ...prev,
       trainingType: "Cardio",
-    }));
-
-    setShowContainers(true);
-  }
-
-  if (activeTab === "strengthCardio") {
-    setFilters((prev) => ({
-      ...prev,
-      trainingType: "Strength+Cardio",
     }));
 
     setShowContainers(true);
@@ -852,8 +836,6 @@ const handleShowExercisesClick = () => {
             setCardioValidate={setCardioValidate}
           />
         )}
-
-        {activeTab === "strengthCardio" && <></>}
         <div className="mt-6">
           <button
             type="button"
