@@ -2,7 +2,6 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { persistStore, persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage";
 
-import trainingReducer from "../features/trainingPlanner/trainingSlice";
 import nutritionReducer from "../features/nutritionPlanner/nutritionSlice";
 import macrosReducer from "../features/nutritionPlanner/macrosSlice";
 import mealsReducer from "../features/mealPlanner/mealsSlice";
@@ -24,7 +23,6 @@ const rootReducer = combineReducers({
   meals: mealsReducer,
   macros: macrosReducer,
   favorites: favoritesReducer,
-  training: trainingReducer,
   nutrition: persistReducer(persistConfig, nutritionReducer),
 });
 

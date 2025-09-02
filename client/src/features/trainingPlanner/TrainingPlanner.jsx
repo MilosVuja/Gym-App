@@ -70,6 +70,28 @@ export default function TrainingPlanner() {
       day: "numeric",
     });
 
+  const DAYS_OF_WEEK = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
+
+  const getRotatedDays = () => {
+    const todayIndex = new Date().getDay();
+    const adjustedIndex = todayIndex === 0 ? 6 : todayIndex - 1;
+
+    return [
+      ...DAYS_OF_WEEK.slice(adjustedIndex),
+      ...DAYS_OF_WEEK.slice(0, adjustedIndex),
+    ];
+  };
+
+  const rotatedDays = getRotatedDays();
+
   useEffect(() => {
     const durationNum = Number(duration);
     const timesPerWeekNum = Number(timesPerWeek);
@@ -241,65 +263,60 @@ export default function TrainingPlanner() {
   };
 
   useEffect(() => {
-  if (activeTab === "Cardio") {
-    setFilters((prev) => ({
-      ...prev,
-      trainingType: "Cardio",
-    }));
-  }
-}, [activeTab]);
-
-
-const fetchExercises = useCallback(() => {
-  const queryParams = new URLSearchParams();
-
-  if (filters.trainingType) {
-    queryParams.set("trainingType", filters.trainingType);
-  }
-
-  if (filters.trainingType === "Strength" && selectedMuscles.length > 0) {
-    const muscleNames = selectedMuscles.map((m) => m.name);
-    queryParams.set("muscles", muscleNames.join(","));
-  }
-
-  Object.entries(filters).forEach(([key, val]) => {
-    if (key === "muscles" || key === "trainingType") return;
-
-    if (Array.isArray(val) && val.length > 0) {
-      queryParams.set(key, val.join(","));
-    } else if (typeof val === "string" && val.trim() !== "") {
-      queryParams.set(key, val.trim());
+    if (activeTab === "Cardio") {
+      setFilters((prev) => ({
+        ...prev,
+        trainingType: "Cardio",
+      }));
     }
-  });
+  }, [activeTab]);
 
-  const url = `http://localhost:3000/api/v1/exercises/filter?${queryParams.toString()}`;
-  console.log("Fetching exercises from:", url);
+  const fetchExercises = useCallback(() => {
+    const queryParams = new URLSearchParams();
 
-  fetch(url)
-    .then((res) => res.json())
-    .then((data) => {
-      if (data.status === "success") {
-        setExercises(data.data);
-      } else {
-        alert("Failed to fetch exercises.");
+    if (filters.trainingType) {
+      queryParams.set("trainingType", filters.trainingType);
+    }
+
+    if (filters.trainingType === "Strength" && selectedMuscles.length > 0) {
+      const muscleNames = selectedMuscles.map((m) => m.name);
+      queryParams.set("muscles", muscleNames.join(","));
+    }
+
+    Object.entries(filters).forEach(([key, val]) => {
+      if (key === "muscles" || key === "trainingType") return;
+
+      if (Array.isArray(val) && val.length > 0) {
+        queryParams.set(key, val.join(","));
+      } else if (typeof val === "string" && val.trim() !== "") {
+        queryParams.set(key, val.trim());
       }
-    })
-    .catch(() => alert("An error occurred while fetching exercises."));
-}, [selectedMuscles, filters]);
+    });
 
+    const url = `http://localhost:3000/api/v1/exercises/filter?${queryParams.toString()}`;
+    console.log("Fetching exercises from:", url);
 
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success") {
+          setExercises(data.data);
+        } else {
+          alert("Failed to fetch exercises.");
+        }
+      })
+      .catch(() => alert("An error occurred while fetching exercises."));
+  }, [selectedMuscles, filters]);
 
-useEffect(() => {
-  if (!showContainers) return;
+  useEffect(() => {
+    if (!showContainers) return;
 
-  if (filters.trainingType === "Strength") {
-    if (selectedMuscles.length === 0) return;
-  }
+    if (filters.trainingType === "Strength") {
+      if (selectedMuscles.length === 0) return;
+    }
 
-  fetchExercises();
-}, [showContainers, selectedMuscles, filters.trainingType, fetchExercises]);
-
-
+    fetchExercises();
+  }, [showContainers, selectedMuscles, filters.trainingType, fetchExercises]);
 
   useEffect(() => {
     const daysFromStorage = [];
@@ -319,35 +336,34 @@ useEffect(() => {
     setSavedDays(daysFromStorage);
   }, []);
 
-const handleShowExercisesClick = () => {
-  if (activeTab === "strength") {
-    if (!selectedMuscles?.length) {
-      alert("Please select at least one muscle.");
-      return;
-    }
-    setFilters((prev) => ({
-      ...prev,
-      trainingType: "Strength",
-    }));
+  const handleShowExercisesClick = () => {
+    if (activeTab === "strength") {
+      if (!selectedMuscles?.length) {
+        alert("Please select at least one muscle.");
+        return;
+      }
+      setFilters((prev) => ({
+        ...prev,
+        trainingType: "Strength",
+      }));
 
-    setShowContainers(true);
-  }
-
-  if (activeTab === "cardio") {
-    if (cardioValidate) {
-      const valid = cardioValidate();
-      if (!valid) return;
+      setShowContainers(true);
     }
 
-    setFilters((prev) => ({
-      ...prev,
-      trainingType: "Cardio",
-    }));
+    if (activeTab === "cardio") {
+      if (cardioValidate) {
+        const valid = cardioValidate();
+        if (!valid) return;
+      }
 
-    setShowContainers(true);
-  }
-};
+      setFilters((prev) => ({
+        ...prev,
+        trainingType: "Cardio",
+      }));
 
+      setShowContainers(true);
+    }
+  };
 
   const handleRemove = (id) => {
     setChosenExercises((prev) => prev.filter((ex) => ex._id !== id));
@@ -711,15 +727,7 @@ const handleShowExercisesClick = () => {
           <h3 className="text-xl mb-4">Select Training Days</h3>
           <div className="flex flex-wrap items-start gap-8">
             <div className="flex gap-4 flex-wrap items-center">
-              {[
-                "Monday",
-                "Tuesday",
-                "Wednesday",
-                "Thursday",
-                "Friday",
-                "Saturday",
-                "Sunday",
-              ].map((day) => {
+              {rotatedDays.map((day) => {
                 const isSaved = savedDays.includes(day);
                 const disabled = isSaved || trainingsLimitReached;
 
