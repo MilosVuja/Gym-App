@@ -3,7 +3,7 @@ import ExerciseCardTraining from "./components/ExerciseCardTraining";
 import CheckboxDropdown from "./components/CheckboxDropdown";
 import SuperSetCard from "./components/SuperSetCard";
 import { FaEdit, FaTrash } from "react-icons/fa";
-
+import dayjs from "dayjs";
 import { useDragAndDrop } from "../../hooks/trainingPlaner/useDragAndDrop";
 
 import TabSwitcher from "../ingredientPicker/components/TabSwitcher";
@@ -79,6 +79,8 @@ export default function TrainingPlanner() {
     "Saturday",
     "Sunday",
   ];
+
+  const today = dayjs();
 
   const getRotatedDays = () => {
     const todayIndex = new Date().getDay();
@@ -727,9 +729,10 @@ export default function TrainingPlanner() {
           <h3 className="text-xl mb-4">Select Training Days</h3>
           <div className="flex flex-wrap items-start gap-8">
             <div className="flex gap-4 flex-wrap items-center">
-              {rotatedDays.map((day) => {
+              {rotatedDays.map((day, index) => {
                 const isSaved = savedDays.includes(day);
                 const disabled = isSaved || trainingsLimitReached;
+                const date = today.startOf("week").add(index, "day");
 
                 return (
                   <div key={day} className="flex items-center space-x-2">
@@ -741,6 +744,7 @@ export default function TrainingPlanner() {
                           ? "bg-red-700"
                           : "hover:bg-red-700"
                       }`}
+                      title={`Plan for ${day} – ${date.format("MMM D, YYYY")}`}
                       onClick={() => !disabled && toggleDaySelection(day)}
                       disabled={disabled}
                     >
