@@ -47,6 +47,7 @@ export default function TrainingPlanner() {
     trainingType: [],
     category: [],
     search: "",
+    muscles: [],
   });
 
   const [activeTab, setActiveTab] = useState("strength");
@@ -186,47 +187,35 @@ export default function TrainingPlanner() {
       selectedMuscleInfo?.name &&
       !selectedMuscles.some((m) => m.name === selectedMuscleInfo.name)
     ) {
-      setSelectedMuscles((prev) => [
-        ...prev,
-        {
-          name: selectedMuscleInfo.name,
-          latinName: selectedMuscleInfo.latinName,
-        },
-      ]);
+      const newMuscle = {
+        name: selectedMuscleInfo.name,
+        latinName: selectedMuscleInfo.latinName,
+      };
+      setSelectedMuscles((prev) => [...prev, newMuscle]);
+      setFilledMuscles((prev) =>
+        new Set(prev).add(selectedMuscleInfo.latinName)
+      );
 
-      setFilledMuscles((prev) => {
-        const newSet = new Set(prev);
-        newSet.add(selectedMuscleInfo.latinName);
-        return newSet;
-      });
+      setFilters((prev) => ({
+        ...prev,
+        muscles: [...prev.muscles, selectedMuscleInfo.name],
+      }));
     }
   };
 
-  const removeMuscle = (muscleNameToRemove) => {
-    setSelectedMuscles((prevMuscles) => {
-      const updated = prevMuscles.filter(
-        (muscle) => muscle.name !== muscleNameToRemove
-      );
-
-      const removed = prevMuscles.find(
-        (muscle) => muscle.name === muscleNameToRemove
-      );
-
-      if (removed) {
-        setFilledMuscles((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(removed.latinName);
-          return newSet;
-        });
-
-        if (selected === removed.latinName) {
-          setSelected(null);
-          setSelectedMuscleInfo(null);
-        }
-      }
-
-      return updated;
+  const removeMuscle = (muscleName) => {
+    setSelectedMuscles((prev) => prev.filter((m) => m.name !== muscleName));
+    setFilledMuscles((prev) => {
+      const newSet = new Set(prev);
+      const removed = selectedMuscles.find((m) => m.name === muscleName);
+      if (removed) newSet.delete(removed.latinName);
+      return newSet;
     });
+
+    setFilters((prev) => ({
+      ...prev,
+      muscles: prev.muscles.filter((m) => m !== muscleName),
+    }));
   };
 
   const weekdayOrder = [
@@ -251,25 +240,8 @@ export default function TrainingPlanner() {
     });
   };
 
-  const handleFilterChange = async (key, value, isCheckbox = false) => {
-    if (key === "trainingType" && isCheckbox) {
-      const prevTypes = filters.trainingType;
-      const isAdding = value.length > prevTypes.length;
-      const diff = isAdding
-        ? value.find((v) => !prevTypes.includes(v))
-        : prevTypes.find((v) => !value.includes(v));
-
-      if (isAdding && diff) {
-        await fetchExercises(diff, true);
-      } else if (!isAdding && diff) {
-        setExercises((prev) => prev.filter((ex) => ex.trainingType !== diff));
-      }
-    }
-
-    setFilters((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   useEffect(() => {
@@ -281,44 +253,56 @@ export default function TrainingPlanner() {
     }
   }, [activeTab]);
 
-  const fetchExercises = useCallback(
-    async (type, append = false) => {
-      const queryParams = new URLSearchParams();
+  const fetchExercisesForType = useCallback(async (type, filters) => {
+    const queryParams = new URLSearchParams();
+    queryParams.set("trainingType", type);
 
-      if (type) queryParams.set("trainingType", type);
+    if (type === "Strength" && filters.muscles?.length) {
+      queryParams.set("muscles", filters.muscles.join(","));
+    }
 
-      if (type === "Strength" && selectedMuscles.length > 0) {
-        const muscleNames = selectedMuscles.map((m) => m.name);
-        queryParams.set("muscles", muscleNames.join(","));
-      }
+    if (filters.category.length)
+      queryParams.set("category", filters.category.join(","));
+    if (filters.movement.length)
+      queryParams.set("movement", filters.movement.join(","));
+    if (filters.equipment.length)
+      queryParams.set("equipment", filters.equipment.join(","));
+    if (filters.search) queryParams.set("search", filters.search);
 
-      const url = `http://localhost:3000/api/v1/exercises/filter?${queryParams.toString()}`;
-      console.log("Fetching exercises from:", url);
+    const url = `http://localhost:3000/api/v1/exercises/filter?${queryParams.toString()}`;
+    console.log("Fetching:", url);
 
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (data.status === "success") {
-          setExercises((prev) => {
-            if (!append) return data.data;
-            const existingIds = new Set(prev.map((ex) => ex._id));
-            const newOnes = data.data.filter((ex) => !existingIds.has(ex._id));
-            return [...prev, ...newOnes];
-          });
-        }
-      } catch {
-        alert("An error occurred while fetching exercises.");
-      }
-    },
-    [selectedMuscles]
-  );
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      return data.status === "success" ? data.data : [];
+    } catch (err) {
+      console.error("Failed to fetch exercises:", err);
+      return [];
+    }
+  }, []);
 
   useEffect(() => {
-    if (!showContainers) return;
-    const baseType = activeTab === "strength" ? "Strength" : "Cardio";
-    fetchExercises(baseType, false);
-  }, [activeTab, showContainers, selectedMuscles, fetchExercises]);
+    const activeTypes = Array.isArray(filters.trainingType)
+      ? filters.trainingType
+      : [filters.trainingType];
+
+    if (!activeTypes.length) {
+      setExercises([]);
+      return;
+    }
+
+    const fetchAll = async () => {
+      let combinedResults = [];
+      for (const type of activeTypes) {
+        const results = await fetchExercisesForType(type, filters);
+        combinedResults = [...combinedResults, ...results];
+      }
+      setExercises(combinedResults);
+    };
+
+    fetchAll();
+  }, [filters, fetchExercisesForType]);
 
   useEffect(() => {
     const daysFromStorage = [];
@@ -342,16 +326,27 @@ export default function TrainingPlanner() {
     setShowContainers(true);
 
     if (activeTab === "strength") {
-      if (!selectedMuscles?.length) {
+      if (!selectedMuscles.length) {
         alert("Please select at least one muscle.");
         return;
       }
-      fetchExercises("Strength", false);
+
+      setFilters((prev) => ({
+        ...prev,
+        trainingType: ["Strength"],
+        muscles: selectedMuscles.map((m) => m.name),
+      }));
+      return;
     }
 
     if (activeTab === "cardio") {
       if (cardioValidate && !cardioValidate()) return;
-      fetchExercises("Cardio", false);
+
+      setFilters((prev) => ({
+        ...prev,
+        trainingType: ["Cardio"],
+        muscles: [],
+      }));
     }
   };
 
