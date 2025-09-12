@@ -10,6 +10,10 @@ import TabSwitcher from "../ingredientPicker/components/TabSwitcher";
 import StrengthPlanner from "./components/StrengthPlanner";
 import CardioPlanner from "./components/CardioPlanner";
 
+import CardioBlockModal from "./components/CardioBlockModal";
+import CardioBlockCard from "./components/CardioBlockCard";
+import CardioTrainingType from "./components/CardioTrainingType";
+
 export default function TrainingPlanner() {
   const [duration, setDuration] = useState("");
   const [timesPerWeek, setTimesPerWeek] = useState("");
@@ -22,7 +26,9 @@ export default function TrainingPlanner() {
   const [trainingDays, setTrainingDays] = useState([]);
   const [exercises, setExercises] = useState([]);
   const [chosenExercises, setChosenExercises] = useState([]);
+  const [editingBlock, setEditingBlock] = useState(null);
   const [showContainers, setShowContainers] = useState(false);
+  const [isCardioModalOpen, setIsCardioModalOpen] = useState(false);
   const {
     handleDragStart,
     handleDragOver,
@@ -49,6 +55,10 @@ export default function TrainingPlanner() {
     search: "",
     muscles: [],
   });
+
+  const isCardioSelected = Array.isArray(filters.trainingType)
+    ? filters.trainingType.includes("Cardio")
+    : filters.trainingType === "Cardio";
 
   const [activeTab, setActiveTab] = useState("strength");
 
@@ -642,6 +652,91 @@ export default function TrainingPlanner() {
     });
   };
 
+  const handleAddCardioBlock = (block) => {
+    setChosenExercises((prev) => [...prev, block]);
+  };
+
+  const handleEditBlock = (block) => {
+    setEditingBlock(block);
+  };
+
+  const handleSaveBlock = (id, newSettings) => {
+    setChosenExercises((prev) =>
+      prev.map((item) =>
+        item._id === id ? { ...item, settings: newSettings } : item
+      )
+    );
+  };
+
+  const handleRemoveBlock = (id) => {
+    setChosenExercises((prev) => prev.filter((item) => item._id !== id));
+  };
+
+  const handleDropExercise = (e, blockId) => {
+    const data = e.dataTransfer.getData("application/json");
+    if (!data) return;
+
+    try {
+      const droppedData = JSON.parse(data);
+      if (droppedData.type === "external") {
+        const exercise = droppedData.exercise;
+
+        setChosenExercises((prev) =>
+          prev.map((item) =>
+            item._id === blockId && item.type === "CardioBlock"
+              ? {
+                  ...item,
+                  exercises: [...(item.exercises || []), exercise],
+                }
+              : item
+          )
+        );
+      }
+      else if (droppedData.type === "chosen") {
+        const exercise = droppedData.exercise;
+
+        setChosenExercises((prev) => {
+          const updatedExercises = prev
+            .map((item) => {
+              if (
+                item._id === droppedData.fromBlock &&
+                item.type === "CardioBlock"
+              ) {
+                return {
+                  ...item,
+                  exercises: (item.exercises || []).filter(
+                    (ex) => ex._id !== exercise._id
+                  ),
+                };
+              } else if (item._id === exercise._id) {
+                return null;
+              }
+              return item;
+            })
+            .filter(Boolean);
+          return updatedExercises.map((item) =>
+            item._id === blockId && item.type === "CardioBlock"
+              ? {
+                  ...item,
+                  exercises: [...(item.exercises || []), exercise],
+                }
+              : item
+          );
+        });
+      }
+    } catch (error) {
+      console.error("Error parsing drop data:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!isCardioSelected) {
+      setChosenExercises((prev) =>
+        prev.filter((ex) => ex.type !== "CardioBlock")
+      );
+    }
+  }, [isCardioSelected]);
+
   return (
     <div id="wrapper" className="w-full bg-black text-white font-sans p-8">
       <h2 className="text-4xl text-red-600 font-bold font-handwriting mb-8 text-center">
@@ -980,12 +1075,23 @@ export default function TrainingPlanner() {
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                   Your Chosen Exercises
                 </h3>
-                <button
-                  onClick={handleAddSuperset}
-                  className="bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700"
-                >
-                  + Add Superset
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAddSuperset}
+                    className="bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700"
+                  >
+                    + Add Superset
+                  </button>
+
+                  {isCardioSelected && (
+                    <button
+                      className="bg-purple-600 text-white text-sm px-3 py-1 rounded-md hover:bg-purple-700"
+                      onClick={() => setIsCardioModalOpen(true)}
+                    >
+                      + Add Cardio Block
+                    </button>
+                  )}
+                </div>
               </div>
 
               {chosenExercises.length === 0 ? (
@@ -1029,6 +1135,19 @@ export default function TrainingPlanner() {
                           handleDropIntoSuperset={handleDropIntoSuperset}
                           numberSize="small"
                         />
+                      ) : exercise.type === "CardioBlock" ? (
+                        <CardioBlockCard
+                          block={exercise}
+                          onEdit={handleEditBlock}
+                          onRemove={handleRemoveBlock}
+                          onDropExercise={handleDropExercise}
+                          handleDragStart={handleDragStart}
+                          handleDragOver={handleDragOver}
+                          handleDropReorder={handleDropReorder}
+                          setSelectedExercise={setSelectedExercise}
+                          setModalOpen={setModalOpen}
+                          position={index + 1}
+                        />
                       ) : (
                         <ExerciseCardTraining
                           exercise={exercise}
@@ -1045,9 +1164,32 @@ export default function TrainingPlanner() {
                       )}
                     </div>
                   ))}
+                  {editingBlock && (
+                    <CardioBlockModal
+                      block={editingBlock}
+                      onClose={() => setEditingBlock(null)}
+                      onSave={handleSaveBlock}
+                    />
+                  )}
                 </div>
               )}
             </div>
+            {isCardioModalOpen && (
+              <CardioTrainingType
+                onClose={() => setIsCardioModalOpen(false)}
+                onSave={({ cardioType, settings }) => {
+                  const newBlock = {
+                    _id: crypto.randomUUID(),
+                    type: "CardioBlock",
+                    cardioType,
+                    settings,
+                    exercises: [],
+                  };
+                  handleAddCardioBlock(newBlock);
+                  setIsCardioModalOpen(false);
+                }}
+              />
+            )}
           </>
         )}
       </>

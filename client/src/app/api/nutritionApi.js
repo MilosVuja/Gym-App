@@ -1,4 +1,3 @@
-// nutritionApi.js
 import axios from "axios";
 
 const API_URL = "http://localhost:3000/api/v1/nutrition-plans";
@@ -15,14 +14,13 @@ export const saveNutritionPlan = async (planData) => {
   }
 };
 
-// ✅ New helper for macros by date
 export const getMacrosByDate = async (date) => {
   try {
     const res = await axios.get(`${API_URL}/macros`, {
       params: { date },
       withCredentials: true,
     });
-    return res.data; // { status, data }
+    return res.data;
   } catch (error) {
     console.error("API error (getMacrosByDate):", error);
     throw error;

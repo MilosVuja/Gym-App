@@ -3,8 +3,17 @@ import { useState } from "react";
 export const useDragAndDrop = (chosenExercises, setChosenExercises) => {
   const [dragData, setDragData] = useState(null);
 
-  const handleDragStart = (e, item, source) => {
-    setDragData({ item, source });
+  const handleDragStart = (e, item, context) => {
+    const data = {
+      exercise: item,
+      type: context.type,
+      fromBlock: context.fromBlock || null,
+    };
+
+    e.dataTransfer.setData("application/json", JSON.stringify(data));
+    e.dataTransfer.effectAllowed = "move";
+
+    setDragData(data);
   };
 
   const handleDragOver = (e) => {
@@ -15,20 +24,16 @@ export const useDragAndDrop = (chosenExercises, setChosenExercises) => {
     e.preventDefault();
     if (!dragData) return;
 
-    const { item, source } = dragData;
+    const { exercise: item, type: sourceType, fromBlock } = dragData;
 
     setChosenExercises((prev) => {
       let updated = [...prev];
 
-      if (source.type === "external") {
-        if (!updated.find((x) => x._id === item._id)) {
-          updated.push(item);
-        }
-      }
-
-      if (source.type === "superset-exercise") {
+      if (sourceType === "chosen") {
+        updated = updated.filter((x) => x._id !== item._id);
+      } else if (sourceType === "superset-exercise" && fromBlock) {
         updated = updated.map((ex) => {
-          if (ex.type === "superset" && ex._id === source.supersetId) {
+          if (ex.type === "superset" && ex._id === fromBlock) {
             return {
               ...ex,
               exercises: ex.exercises.filter((x) => x._id !== item._id),
@@ -36,9 +41,9 @@ export const useDragAndDrop = (chosenExercises, setChosenExercises) => {
           }
           return ex;
         });
-        if (!updated.find((x) => x._id === item._id)) {
-          updated.push(item);
-        }
+      }
+      if (!updated.find((x) => x._id === item._id)) {
+        updated.push(item);
       }
 
       return updated;
@@ -52,7 +57,7 @@ export const useDragAndDrop = (chosenExercises, setChosenExercises) => {
     e.stopPropagation();
     if (!dragData) return;
 
-    const { item, source } = dragData;
+    const { exercise: item, type: sourceType, fromBlock } = dragData;
 
     if (item.type === "superset") {
       setDragData(null);
@@ -61,21 +66,11 @@ export const useDragAndDrop = (chosenExercises, setChosenExercises) => {
 
     setChosenExercises((prev) => {
       let updated = [...prev];
-
-      const targetSuperset = updated.find(
-        (ex) => ex.type === "superset" && ex._id === supersetId
-      );
-
-      const alreadyInSuperset = targetSuperset?.exercises.some(
-        (x) => x._id === item._id
-      );
-      if (source.type === "chosen" && !alreadyInSuperset) {
+      if (sourceType === "chosen") {
         updated = updated.filter((x) => x._id !== item._id);
-      }
-
-      if (source.type === "superset-exercise") {
+      } else if (sourceType === "superset-exercise" && fromBlock) {
         updated = updated.map((ex) => {
-          if (ex.type === "superset" && ex._id === source.supersetId) {
+          if (ex.type === "superset" && ex._id === fromBlock) {
             return {
               ...ex,
               exercises: ex.exercises.filter((x) => x._id !== item._id),
@@ -84,7 +79,6 @@ export const useDragAndDrop = (chosenExercises, setChosenExercises) => {
           return ex;
         });
       }
-
       updated = updated.map((ex) => {
         if (ex.type === "superset" && ex._id === supersetId) {
           if (!ex.exercises.find((x) => x._id === item._id)) {
@@ -103,17 +97,13 @@ export const useDragAndDrop = (chosenExercises, setChosenExercises) => {
   const handleDropReorder = (e, targetIndex, containerType = "chosen") => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!dragData) return;
-    const { item, source } = dragData;
 
-    if (source.type !== "chosen" || containerType !== "chosen") {
-      return;
-    }
+    const { exercise: item, type: sourceType } = dragData;
+    if (sourceType !== "chosen" || containerType !== "chosen") return;
 
     setChosenExercises((prev) => {
       const updated = [...prev];
-
       const fromIndex = updated.findIndex((x) => x._id === item._id);
       if (fromIndex === -1 || fromIndex === targetIndex) return updated;
 
